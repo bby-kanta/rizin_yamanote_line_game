@@ -93,8 +93,8 @@
           <div class="row">
             <% @used_fighters.each do |used_fighter| %>
               <div class="col-md-6 mb-2">
-                <div class="d-flex justify-content-between">
-                  <span><%= used_fighter.fighter.display_name %></span>
+                <div class="used-fighter-item d-flex justify-content-between">
+                  <span class="fw-bold"><%= used_fighter.fighter.display_name %></span>
                   <small class="text-muted"><%= used_fighter.used_by.name %></small>
                 </div>
               </div>
@@ -111,8 +111,8 @@
       <div class="card-body">
         <h5 class="card-title">参加者 (<%= @players.count %>人)</h5>
         <% @players.each do |game_player| %>
-          <div class="d-flex justify-content-between align-items-center mb-2 
-                      <%= 'bg-light p-2 rounded' if game_player.current_turn? %>">
+          <div class="player-card d-flex justify-content-between align-items-center mb-2 p-3 rounded
+                      <%= 'current-turn' if game_player.current_turn? %>">
             <div>
               <span class="<%= 'fw-bold text-primary' if game_player.current_turn? %>">
                 <%= game_player.turn_order %>. <%= game_player.user.name %>

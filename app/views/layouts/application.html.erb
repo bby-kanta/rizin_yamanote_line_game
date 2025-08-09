@@ -36,14 +36,14 @@
     <% end %>
     
     <% if user_signed_in? %>
-      <nav class="navbar navbar-dark bg-dark">
+      <nav class="navbar">
         <div class="container">
-          <%= link_to "RIZIN山手線ゲーム", root_path, class: "navbar-brand" %>
+          <%= link_to "🥊 RIZIN山手線ゲーム", root_path, class: "navbar-brand" %>
           <div class="d-flex align-items-center">
-            <%= link_to "選手検索", fighters_path, class: "nav-link text-white me-3" %>
-            <%= link_to "ゲーム", game_sessions_path, class: "nav-link text-white me-3" %>
-            <span class="text-white me-3">こんにちは、<%= current_user.name %>さん</span>
-            <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "btn btn-outline-light btn-sm" %>
+            <%= link_to "選手検索", fighters_path, class: "nav-link me-3" %>
+            <%= link_to "ゲーム", game_sessions_path, class: "nav-link me-3" %>
+            <span class="text-secondary me-3">こんにちは、<%= current_user.name %>さん</span>
+            <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "btn btn-outline-primary btn-sm" %>
           </div>
         </div>
       </nav>
