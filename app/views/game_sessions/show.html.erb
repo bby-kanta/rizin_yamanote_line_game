@@ -66,23 +66,15 @@
           <% end %>
 
           <% if params[:query].present? && @search_results&.any? && !@single_candidate %>
-            <div class="mt-3">
-              <h6>検索結果:</h6>
-              <% @search_results.each do |fighter| %>
-                <div class="border p-2 mb-2">
-                  <%= form_with url: submit_fighter_game_session_path(@game_session), method: :post, local: true, class: "d-inline" do |form| %>
-                    <%= form.hidden_field :fighter_id, value: fighter.id %>
-                    <div class="d-flex justify-content-between align-items-center">
-                      <div>
-                        <strong><%= fighter.display_name %></strong><br>
-                        <small class="text-muted"><%= fighter.full_name_hiragana %></small><br>
-                        <small class="text-muted">階級: <%= fighter.weight_classes.map(&:japanese_name).join(", ") %></small>
-                      </div>
-                      <%= form.submit "選択", class: "btn btn-primary btn-sm" %>
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
+            <div class="alert alert-warning mt-3">
+              <strong>複数の選手が見つかりました！</strong><br>
+              一人に絞れるまでひらがなを入力してください。
+            </div>
+          <% end %>
+          
+          <% if params[:query].present? && @search_results&.empty? %>
+            <div class="alert alert-info mt-3">
+              「<%= params[:query] %>」に一致する選手が見つかりませんでした。
             </div>
           <% end %>
         </div>
