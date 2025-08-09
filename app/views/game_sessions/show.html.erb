@@ -147,7 +147,7 @@
         <% if @game_session.waiting? %>
           <% if @game_session.creator == current_user %>
             <% if @game_session.game_players.count >= 2 %>
-              <%= link_to "ゲーム開始", start_game_game_session_path(@game_session), 
+              <%= button_to "ゲーム開始", start_game_game_session_path(@game_session), 
                           method: :patch, class: "btn btn-success w-100 mb-2",
                           confirm: "ゲームを開始しますか？" %>
             <% else %>
@@ -159,7 +159,7 @@
           <% end %>
         <% end %>
 
-        <%= link_to "退出", leave_game_session_path(@game_session), 
+        <%= button_to "退出", leave_game_session_path(@game_session), 
                     method: :delete, class: "btn btn-outline-danger w-100 mb-2",
                     confirm: @game_session.playing? ? "ゲームから脱落しますか？" : "ゲームから退出しますか？" %>
         

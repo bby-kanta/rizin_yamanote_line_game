@@ -84,7 +84,7 @@
                   <% elsif current_user.current_game_session %>
                     <small class="text-muted">他のゲームに参加中</small>
                   <% else %>
-                    <%= link_to "参加", join_game_session_path(game), method: :patch, class: "btn btn-success btn-sm" %>
+                    <%= button_to "参加", join_game_session_path(game), method: :patch, class: "btn btn-success btn-sm" %>
                   <% end %>
                 </div>
               </div>
