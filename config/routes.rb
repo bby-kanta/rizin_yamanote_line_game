@@ -1,6 +1,5 @@
 Rails.application.routes.draw do
-  get "fighters/index"
-  get "fighters/show"
+  resources :fighters, only: [:index, :show]
   devise_for :users
   
   root "home#index"

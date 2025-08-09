@@ -1,0 +1,42 @@
+<h1><%= @fighter.display_name %></h1>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">選手情報</h5>
+    <dl class="row">
+      <dt class="col-sm-3">本名</dt>
+      <dd class="col-sm-9"><%= @fighter.full_name %></dd>
+      
+      <dt class="col-sm-3">本名（ひらがな）</dt>
+      <dd class="col-sm-9"><%= @fighter.full_name_hiragana %></dd>
+      
+      <% if @fighter.ring_name.present? %>
+        <dt class="col-sm-3">リングネーム</dt>
+        <dd class="col-sm-9"><%= @fighter.ring_name %></dd>
+        
+        <% if @fighter.ring_name_hiragana.present? %>
+          <dt class="col-sm-3">リングネーム（ひらがな）</dt>
+          <dd class="col-sm-9"><%= @fighter.ring_name_hiragana %></dd>
+        <% end %>
+      <% end %>
+      
+      <dt class="col-sm-3">階級</dt>
+      <dd class="col-sm-9">
+        <% @fighter.weight_classes.each do |weight_class| %>
+          <span class="badge bg-secondary me-1"><%= weight_class.japanese_name %></span>
+        <% end %>
+      </dd>
+      
+      <dt class="col-sm-3">状態</dt>
+      <dd class="col-sm-9">
+        <span class="badge <%= @fighter.is_active ? 'bg-success' : 'bg-danger' %>">
+          <%= @fighter.is_active ? '現役' : '非現役' %>
+        </span>
+      </dd>
+    </dl>
+  </div>
+</div>
+
+<div class="mt-3">
+  <%= link_to "戻る", fighters_path, class: "btn btn-secondary" %>
+</div>

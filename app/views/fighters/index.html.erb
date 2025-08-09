@@ -1,0 +1,38 @@
+<h1>選手検索</h1>
+
+<%= form_with url: fighters_path, method: :get, local: true do |form| %>
+  <%= form.text_field :query, value: @query, placeholder: "選手名をひらがなで入力", 
+                      class: "form-control", id: "fighter-search" %>
+  <%= form.submit "検索", class: "btn btn-primary" %>
+<% end %>
+
+<% if @single_candidate %>
+  <div class="alert alert-success mt-3">
+    <strong>候補が1件に絞り込まれました:</strong> <%= @single_candidate.display_name %>
+    (<%= @single_candidate.full_name_hiragana %>)
+  </div>
+<% end %>
+
+<div class="row mt-4">
+  <% @fighters.each do |fighter| %>
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title"><%= fighter.display_name %></h5>
+          <p class="card-text">
+            <strong>ひらがな:</strong> <%= fighter.full_name_hiragana %><br>
+            <strong>階級:</strong> 
+            <%= fighter.weight_classes.map(&:japanese_name).join(", ") %>
+          </p>
+          <%= link_to "詳細", fighter_path(fighter), class: "btn btn-outline-primary" %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>
+
+<% if @fighters.empty? && @query.present? %>
+  <div class="alert alert-info mt-3">
+    「<%= @query %>」に一致する選手が見つかりませんでした。
+  </div>
+<% end %>
