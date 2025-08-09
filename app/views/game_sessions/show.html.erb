@@ -1,2 +1,170 @@
-<h1>GameSessions#show</h1>
-<p>Find me in app/views/game_sessions/show.html.erb</p>
+<h1><%= @game_session.name %></h1>
+
+<div class="row">
+  <!-- ゲーム状態表示 -->
+  <div class="col-md-8">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">
+          ゲーム状態: 
+          <span class="badge <%= case @game_session.status
+                                 when 'waiting' then 'bg-warning'
+                                 when 'playing' then 'bg-success'  
+                                 when 'finished' then 'bg-secondary'
+                                 end %>">
+            <%= case @game_session.status
+                when 'waiting' then '待機中'
+                when 'playing' then 'プレイ中'
+                when 'finished' then '終了'
+                end %>
+          </span>
+        </h5>
+        
+        <% if @game_session.playing? %>
+          <p class="mb-2">
+            <strong>現在のターン:</strong> 
+            <span class="text-primary"><%= @game_session.current_turn_player.name %>さん</span>
+          </p>
+        <% end %>
+        
+        <% if @game_session.finished? && @game_session.winner %>
+          <div class="alert alert-success">
+            <h4>🎉 勝者: <%= @game_session.winner.name %>さん</h4>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- 選手検索・選択 -->
+    <% if @game_session.playing? && @game_session.current_turn_player == current_user %>
+      <div class="card mb-3">
+        <div class="card-body">
+          <h5 class="card-title">あなたのターンです - 選手を選択してください</h5>
+          
+          <%= form_with url: game_session_path(@game_session), method: :get, local: true do |form| %>
+            <%= form.text_field :query, value: params[:query], placeholder: "選手名をひらがなで入力", 
+                                class: "form-control mb-2", id: "fighter-search" %>
+            <%= form.submit "検索", class: "btn btn-outline-primary btn-sm" %>
+          <% end %>
+
+          <% if @single_candidate %>
+            <div class="alert alert-info mt-3">
+              <strong>候補が1件に絞り込まれました:</strong>
+              <%= form_with url: submit_fighter_game_session_path(@game_session), method: :post, local: true do |form| %>
+                <%= form.hidden_field :fighter_id, value: @single_candidate.id %>
+                <div class="d-flex align-items-center">
+                  <span class="me-3"><%= @single_candidate.display_name %> (<%= @single_candidate.full_name_hiragana %>)</span>
+                  <%= form.submit "この選手を選択", class: "btn btn-success btn-sm" %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if params[:query].present? && @search_results&.any? && !@single_candidate %>
+            <div class="mt-3">
+              <h6>検索結果:</h6>
+              <% @search_results.each do |fighter| %>
+                <div class="border p-2 mb-2">
+                  <%= form_with url: submit_fighter_game_session_path(@game_session), method: :post, local: true, class: "d-inline" do |form| %>
+                    <%= form.hidden_field :fighter_id, value: fighter.id %>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong><%= fighter.display_name %></strong><br>
+                        <small class="text-muted"><%= fighter.full_name_hiragana %></small><br>
+                        <small class="text-muted">階級: <%= fighter.weight_classes.map(&:japanese_name).join(", ") %></small>
+                      </div>
+                      <%= form.submit "選択", class: "btn btn-primary btn-sm" %>
+                    </div>
+                  <% end %>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% elsif @game_session.playing? %>
+      <div class="alert alert-info">
+        <%= @game_session.current_turn_player.name %>さんのターンです。お待ちください。
+      </div>
+    <% end %>
+
+    <!-- 使用済み選手一覧 -->
+    <% if @used_fighters.any? %>
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">使用済み選手 (<%= @used_fighters.count %>人)</h5>
+          <div class="row">
+            <% @used_fighters.each do |used_fighter| %>
+              <div class="col-md-6 mb-2">
+                <div class="d-flex justify-content-between">
+                  <span><%= used_fighter.fighter.display_name %></span>
+                  <small class="text-muted"><%= used_fighter.used_by.name %></small>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- サイドバー - プレイヤー情報・操作 -->
+  <div class="col-md-4">
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">参加者 (<%= @players.count %>人)</h5>
+        <% @players.each do |game_player| %>
+          <div class="d-flex justify-content-between align-items-center mb-2 
+                      <%= 'bg-light p-2 rounded' if game_player.current_turn? %>">
+            <div>
+              <span class="<%= 'fw-bold text-primary' if game_player.current_turn? %>">
+                <%= game_player.turn_order %>. <%= game_player.user.name %>
+              </span>
+              <% if game_player.is_eliminated %>
+                <span class="badge bg-danger ms-1">脱落</span>
+              <% elsif game_player.current_turn? %>
+                <span class="badge bg-success ms-1">ターン中</span>
+              <% end %>
+            </div>
+            
+            <% if @game_session.creator == current_user && @game_session.playing? && !game_player.is_eliminated %>
+              <%= form_with url: eliminate_player_game_session_path(@game_session), method: :patch, local: true, class: "d-inline" do |form| %>
+                <%= form.hidden_field :user_id, value: game_player.user.id %>
+                <%= form.submit "脱落", class: "btn btn-outline-danger btn-sm", 
+                                confirm: "#{game_player.user.name}さんを脱落させますか？" %>
+              <% end %>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <!-- ゲーム操作 -->
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">操作</h5>
+        
+        <% if @game_session.waiting? %>
+          <% if @game_session.creator == current_user %>
+            <% if @game_session.game_players.count >= 2 %>
+              <%= link_to "ゲーム開始", start_game_game_session_path(@game_session), 
+                          method: :patch, class: "btn btn-success w-100 mb-2",
+                          confirm: "ゲームを開始しますか？" %>
+            <% else %>
+              <div class="alert alert-warning">
+                最低2人のプレイヤーが必要です
+              </div>
+            <% end %>
+            <%= link_to "設定変更", edit_game_session_path(@game_session), class: "btn btn-outline-primary w-100 mb-2" %>
+          <% end %>
+        <% end %>
+
+        <%= link_to "退出", leave_game_session_path(@game_session), 
+                    method: :delete, class: "btn btn-outline-danger w-100 mb-2",
+                    confirm: @game_session.playing? ? "ゲームから脱落しますか？" : "ゲームから退出しますか？" %>
+        
+        <%= link_to "ゲーム一覧に戻る", game_sessions_path, class: "btn btn-secondary w-100" %>
+      </div>
+    </div>
+  </div>
+</div>

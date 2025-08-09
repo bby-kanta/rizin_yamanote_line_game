@@ -1,12 +1,139 @@
-<div style="padding: 20px;">
-  <h1>RIZIN選手名山手線ゲーム</h1>
-  <p>リアルタイムで選手名を記録し、重複や言い忘れを防ぐWebアプリケーションです。</p>
-  
-  <div style="margin-top: 20px;">
-    <%= link_to "新しいセッションを作成", "#", class: "button", style: "background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; margin-right: 10px;" %>
-    <%= link_to "セッションに参加", "#", class: "button", style: "background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;" %>
+<div class="hero-section bg-primary text-white p-5 mb-5">
+  <div class="container text-center">
+    <h1 class="display-4 mb-3">🥊 RIZIN山手線ゲーム</h1>
+    <p class="lead mb-4">RIZIN選手の名前でみんなでしりとりゲーム！<br>ひらがな入力で検索、重複防止、ターン制で楽しもう！</p>
+    
+    <% if user_signed_in? %>
+      <div class="d-flex justify-content-center gap-3">
+        <%= link_to "🎮 ゲームを始める", game_sessions_path, class: "btn btn-success btn-lg" %>
+        <%= link_to "🔍 選手を探す", fighters_path, class: "btn btn-outline-light btn-lg" %>
+      </div>
+    <% else %>
+      <div class="d-flex justify-content-center gap-3">
+        <%= link_to "ログイン", new_user_session_path, class: "btn btn-light btn-lg" %>
+        <%= link_to "新規登録", new_user_registration_path, class: "btn btn-outline-light btn-lg" %>
+      </div>
+    <% end %>
   </div>
-  
-  <h2>参加可能なセッション</h2>
-  <p>現在、参加可能なセッションはありません。</p>
 </div>
+
+<% if user_signed_in? %>
+  <div class="row">
+    <!-- 参加中のゲーム -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-gamepad me-2"></i>参加中のゲーム
+          </h5>
+          <% current_game = current_user.current_game_session %>
+          <% if current_game %>
+            <div class="alert alert-info">
+              <strong><%= current_game.name %></strong><br>
+              <small class="text-muted">
+                状態: <%= current_game.waiting? ? '待機中' : 'プレイ中' %> | 
+                参加者: <%= current_game.players.count %>人
+              </small>
+            </div>
+            <%= link_to "ゲームに入る", current_game, class: "btn btn-primary" %>
+          <% else %>
+            <p class="text-muted mb-3">現在参加中のゲームはありません</p>
+            <%= link_to "新しいゲームを作成", new_game_session_path, class: "btn btn-success" %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- クイックアクセス -->
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="fas fa-bolt me-2"></i>クイックアクセス
+          </h5>
+          <div class="d-grid gap-2">
+            <%= link_to "🆕 新しいゲームを作成", new_game_session_path, class: "btn btn-outline-success" %>
+            <%= link_to "🎯 ゲーム一覧", game_sessions_path, class: "btn btn-outline-primary" %>
+            <%= link_to "👥 選手検索", fighters_path, class: "btn btn-outline-info" %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 参加可能なゲーム -->
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">
+        <i class="fas fa-users me-2"></i>参加可能なゲーム
+      </h5>
+      <% joinable_games = GameSession.joinable.includes(:creator, :players).limit(3) %>
+      <% if joinable_games.any? %>
+        <div class="row">
+          <% joinable_games.each do |game| %>
+            <div class="col-md-4 mb-3">
+              <div class="card border">
+                <div class="card-body">
+                  <h6 class="card-title"><%= game.name %></h6>
+                  <p class="card-text small">
+                    作成者: <%= game.creator.name %><br>
+                    参加者: <%= game.players.count %>人
+                  </p>
+                  <% if current_user.joined_game?(game) %>
+                    <%= link_to "ゲームに入る", game, class: "btn btn-primary btn-sm" %>
+                  <% elsif current_user.current_game_session %>
+                    <small class="text-muted">他のゲームに参加中</small>
+                  <% else %>
+                    <%= link_to "参加", join_game_session_path(game), method: :patch, class: "btn btn-success btn-sm" %>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+        <%= link_to "もっと見る", game_sessions_path, class: "btn btn-outline-secondary btn-sm" %>
+      <% else %>
+        <p class="text-muted">現在参加可能なゲームがありません。新しいゲームを作成してみましょう！</p>
+        <%= link_to "ゲームを作成", new_game_session_path, class: "btn btn-success" %>
+      <% end %>
+    </div>
+  </div>
+
+<% else %>
+  <!-- 未ログインユーザー向けの説明 -->
+  <div class="row">
+    <div class="col-md-4 mb-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <i class="fas fa-search fa-3x text-primary mb-3"></i>
+          <h5 class="card-title">選手検索</h5>
+          <p class="card-text">ひらがなで選手名を検索。候補が1件に絞り込まれると自動提案！</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <i class="fas fa-sync-alt fa-3x text-success mb-3"></i>
+          <h5 class="card-title">ターン制</h5>
+          <p class="card-text">山手線ゲーム本来のルール。順番に選手名を答えていきます。</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-4">
+      <div class="card text-center h-100">
+        <div class="card-body">
+          <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+          <h5 class="card-title">重複防止</h5>
+          <p class="card-text">使用済み選手は自動記録。同じ選手は使えません。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="text-center mt-4">
+    <p class="lead">今すぐ始めよう！</p>
+    <%= link_to "アカウント作成", new_user_registration_path, class: "btn btn-primary btn-lg me-3" %>
+    <%= link_to "ログイン", new_user_session_path, class: "btn btn-outline-primary btn-lg" %>
+  </div>
+<% end %>

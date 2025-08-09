@@ -1,2 +1,63 @@
-<h1>GameSessions#index</h1>
-<p>Find me in app/views/game_sessions/index.html.erb</p>
+<h1>ゲームセッション</h1>
+
+<div class="mb-3">
+  <%= link_to "新しいゲームを作成", new_game_session_path, class: "btn btn-primary" %>
+</div>
+
+<% if @my_sessions.any? %>
+  <h2>参加中のゲーム</h2>
+  <div class="row">
+    <% @my_sessions.each do |session| %>
+      <div class="col-md-6 mb-3">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">
+              <%= session.name %>
+              <span class="badge <%= session.waiting? ? 'bg-warning' : 'bg-success' %>">
+                <%= session.waiting? ? '待機中' : 'プレイ中' %>
+              </span>
+            </h5>
+            <p class="card-text">
+              <strong>作成者:</strong> <%= session.creator.name %><br>
+              <strong>参加者:</strong> <%= session.players.count %>人<br>
+              <strong>作成日時:</strong> <%= session.created_at.strftime("%Y/%m/%d %H:%M") %>
+            </p>
+            <%= link_to "ゲームに入る", session, class: "btn btn-primary" %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<h2>参加可能なゲーム</h2>
+<% if @joinable_sessions.any? %>
+  <div class="row">
+    <% @joinable_sessions.each do |session| %>
+      <div class="col-md-6 mb-3">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">
+              <%= session.name %>
+              <span class="badge bg-warning">待機中</span>
+            </h5>
+            <p class="card-text">
+              <strong>作成者:</strong> <%= session.creator.name %><br>
+              <strong>参加者:</strong> <%= session.players.count %>人<br>
+              <strong>作成日時:</strong> <%= session.created_at.strftime("%Y/%m/%d %H:%M") %>
+            </p>
+            <% if current_user.joined_game?(session) %>
+              <%= link_to "ゲームに入る", session, class: "btn btn-primary" %>
+            <% elsif current_user.current_game_session %>
+              <button class="btn btn-secondary" disabled>他のゲームに参加中</button>
+            <% else %>
+              <%= link_to "参加する", join_game_session_path(session), method: :patch, class: "btn btn-success" %>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+<% else %>
+  <p class="text-muted">参加可能なゲームがありません。</p>
+<% end %>

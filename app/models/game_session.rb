@@ -8,7 +8,7 @@ class GameSession < ApplicationRecord
   has_many :fighters, through: :used_fighters
   
   # ステータス定義
-  enum status: {
+  enum :status, {
     waiting: 0,    # 待機中（プレイヤー募集中）
     playing: 1,    # ゲーム中
     finished: 2    # ゲーム終了
