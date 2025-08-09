@@ -22,6 +22,24 @@
   </head>
 
   <body>
+    <% if notice.present? %>
+      <div class="notice" style="background-color: #d4edda; color: #155724; padding: 10px; margin: 10px; border-radius: 4px;">
+        <%= notice %>
+      </div>
+    <% end %>
+    <% if alert.present? %>
+      <div class="alert" style="background-color: #f8d7da; color: #721c24; padding: 10px; margin: 10px; border-radius: 4px;">
+        <%= alert %>
+      </div>
+    <% end %>
+    
+    <% if user_signed_in? %>
+      <nav style="background-color: #333; color: white; padding: 10px;">
+        <span>こんにちは、<%= current_user.name %>さん</span>
+        <%= link_to "ログアウト", destroy_user_session_path, method: :delete, data: { turbo_method: :delete }, style: "color: white; margin-left: 20px;" %>
+      </nav>
+    <% end %>
+    
     <%= yield %>
   </body>
 </html>
