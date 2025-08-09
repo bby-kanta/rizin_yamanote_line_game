@@ -52,9 +52,15 @@ gem "selenium-webdriver"
 # Japanese text processing
 gem "romaji"
 
+# AI APIs
+gem "google-cloud-ai_platform-v1"
+
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
+  
+  # Environment variables
+  gem "dotenv-rails"
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
