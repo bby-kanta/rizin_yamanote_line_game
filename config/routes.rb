@@ -6,6 +6,7 @@ Rails.application.routes.draw do
       patch :start_game
       patch :eliminate_player
       post :submit_fighter
+      patch :retire
     end
   end
   

@@ -1,7 +1,7 @@
 class GameSessionsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_game_session, only: [:show, :edit, :update, :destroy, :join, :leave, :start_game, :eliminate_player, :submit_fighter]
-  before_action :check_game_access, only: [:show, :submit_fighter]
+  before_action :set_game_session, only: [:show, :edit, :update, :destroy, :join, :leave, :start_game, :eliminate_player, :submit_fighter, :retire]
+  before_action :check_game_access, only: [:show, :submit_fighter, :retire]
   before_action :check_creator_access, only: [:edit, :update, :destroy, :start_game, :eliminate_player]
   
   def index
@@ -137,6 +137,21 @@ class GameSessionsController < ApplicationController
       redirect_to @game_session, notice: "#{fighter.display_name}を選択しました。"
     else
       redirect_to @game_session, alert: '選手を選択できませんでした。'
+    end
+  end
+
+  def retire
+    if @game_session.current_turn_player != current_user
+      redirect_to @game_session, alert: 'あなたのターンではありません。'
+    elsif @game_session.eliminate_player!(current_user)
+      if @game_session.finished?
+        winner = @game_session.winner
+        redirect_to @game_session, notice: "リタイアしました。#{winner&.name}さんの勝利です！"
+      else
+        redirect_to @game_session, notice: 'リタイアしました。'
+      end
+    else
+      redirect_to @game_session, alert: 'リタイアできませんでした。'
     end
   end
 

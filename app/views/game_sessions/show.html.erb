@@ -39,7 +39,12 @@
     <% if @game_session.playing? && @game_session.current_turn_player == current_user %>
       <div class="card mb-3">
         <div class="card-body">
-          <h5 class="card-title">あなたのターンです - 選手を選択してください</h5>
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="card-title mb-0">あなたのターンです - 選手を選択してください</h5>
+            <%= button_to "リタイア", retire_game_session_path(@game_session), 
+                          method: :patch, class: "btn btn-outline-danger btn-sm",
+                          confirm: "リタイアしますか？ゲームから脱落します。" %>
+          </div>
           
           <%= form_with url: game_session_path(@game_session), method: :get, local: true do |form| %>
             <%= form.text_field :query, value: params[:query], placeholder: "選手名をひらがなで入力", 
