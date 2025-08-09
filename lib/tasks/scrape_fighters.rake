@@ -81,42 +81,32 @@ namespace :fighters do
         end
       end
 
-      if fighter_elements.nil? || fighter_elements.empty?
-        puts "No fighter elements found. Trying alternative approach..."
+      # personタグ内のh4要素から選手情報を直接抽出
+      person_elements = doc.css('.person')
+      if person_elements.any?
+        puts "Found #{person_elements.length} person elements"
         
-        # テキストから選手名を抽出する代替アプローチ
-        text_content = doc.text
-        
-        # 日本語名+ローマ字名の組み合わせパターンを検索（日本人・外国人両方）
-        puts "DEBUG: Searching for fighter patterns in text content..."
-        # 非ASCII文字（日本語文字と記号すべて）+ ローマ字名のパターン
-        fighter_patterns = text_content.scan(/([^\x00-\x7F]+)\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/m)
-        puts "DEBUG: Main fighter_patterns found #{fighter_patterns.length} matches"
-        
-        
-        # 外国人選手（ローマ字のみ）のパターンも検索
-        foreign_fighter_patterns = text_content.scan(/([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/)
-        
-        # 日本語名+ローマ字名の選手を処理
-        fighter_patterns.each do |japanese_name, english_name|
-          japanese_name = japanese_name.strip
-          english_name = english_name.strip
+        person_elements.each do |person|
+          h4_element = person.css('h4').first
+          next unless h4_element
           
-          next if japanese_name.length < 2 || english_name.length < 2
-          next if japanese_name.match?(/\d/) || english_name.match?(/\d/)
+          # h4内のテキストを<br>で分割
+          h4_html = h4_element.inner_html
+          parts = h4_html.split('<br>')
           
-          # デバッグ出力：スクレイピング元データをそのまま表示
-          puts "DEBUG: Scraped data - Japanese: '#{japanese_name}', English: '#{english_name}'"
-          
-          process_fighter_data(japanese_name, english_name, fighters_created, errors)
-          fighters_scraped += 1
+          if parts.length >= 2
+            japanese_name = Nokogiri::HTML(parts[0]).text.strip
+            english_name = Nokogiri::HTML(parts[1]).text.strip
+            
+            next if japanese_name.empty? || english_name.empty?
+            next if japanese_name.match?(/\d/) || english_name.match?(/\d/)
+            
+            puts "DEBUG: Person element - Japanese: '#{japanese_name}', English: '#{english_name}'"
+            
+            process_fighter_data(japanese_name, english_name, fighters_created, errors)
+            fighters_scraped += 1
+          end
         end
-        
-        # 外国人選手（ローマ字のみ）を処理
-        # 注意：この部分では日本語名とローマ字名の両方がスクレイピングで取得されている場合のみ処理
-        # ローマ字のみの場合は、実際にはHTML構造上、日本語表記も存在するはずなので、
-        # まずHTMLの構造を詳しく調べる必要がある
-        puts "DEBUG: Skipping romaji-only processing to preserve original scraped data"
       else
         # 通常のスクレイピング
         fighter_elements.each do |element|
