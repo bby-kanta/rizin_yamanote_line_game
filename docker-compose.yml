@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: sh -c "rm -f tmp/pids/server.pid && bundle exec rails s -b '0.0.0.0'"
+    volumes:
+      - .:/app
+    ports:
+      - "3333:3000"
+    environment:
+      - DATABASE_URL=mysql2://root:password@db/app_development
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=app_development
+
+volumes:
+  mysql_data:
