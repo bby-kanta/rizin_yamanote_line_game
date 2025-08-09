@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  full_name: MyString
+  full_name_hiragana: MyString
+  ring_name: MyString
+  ring_name_hiragana: MyString
+  is_active: false
+
+two:
+  full_name: MyString
+  full_name_hiragana: MyString
+  ring_name: MyString
+  ring_name_hiragana: MyString
+  is_active: false
