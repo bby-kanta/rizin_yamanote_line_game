@@ -1,4 +1,14 @@
 Rails.application.routes.draw do
+  resources :game_sessions do
+    member do
+      patch :join
+      delete :leave
+      patch :start_game
+      patch :eliminate_player
+      post :submit_fighter
+    end
+  end
+  
   resources :fighters, only: [:index, :show]
   devise_for :users
   

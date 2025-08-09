@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  game_session: one
+  user: one
+  turn_order: 1
+  is_eliminated: false
+  joined_at: 2025-08-09 16:38:59
+
+two:
+  game_session: two
+  user: two
+  turn_order: 1
+  is_eliminated: false
+  joined_at: 2025-08-09 16:38:59

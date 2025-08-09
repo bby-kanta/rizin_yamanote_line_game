@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_09_161751) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_09_164140) do
   create_table "fighter_weight_classes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "fighter_id", null: false
     t.bigint "weight_class_id", null: false
@@ -32,7 +32,47 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_161751) do
     t.index ["full_name"], name: "index_fighters_on_full_name", unique: true
     t.index ["full_name_hiragana"], name: "index_fighters_on_full_name_hiragana", unique: true
     t.index ["is_active"], name: "index_fighters_on_is_active"
-    t.index ["ring_name"], name: "index_fighters_on_ring_name", unique: true
+  end
+
+  create_table "game_players", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "game_session_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "turn_order", null: false
+    t.boolean "is_eliminated", default: false, null: false
+    t.datetime "joined_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["game_session_id", "turn_order"], name: "index_game_players_on_game_session_id_and_turn_order", unique: true
+    t.index ["game_session_id", "user_id"], name: "index_game_players_on_game_session_id_and_user_id", unique: true
+    t.index ["game_session_id"], name: "index_game_players_on_game_session_id"
+    t.index ["user_id"], name: "index_game_players_on_user_id"
+  end
+
+  create_table "game_sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "status", default: 0, null: false
+    t.bigint "creator_id", null: false
+    t.bigint "current_turn_player_id"
+    t.datetime "started_at"
+    t.datetime "ended_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["creator_id"], name: "index_game_sessions_on_creator_id"
+    t.index ["current_turn_player_id"], name: "fk_rails_8320569b62"
+    t.index ["status"], name: "index_game_sessions_on_status"
+  end
+
+  create_table "used_fighters", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "game_session_id", null: false
+    t.bigint "fighter_id", null: false
+    t.bigint "used_by_id", null: false
+    t.datetime "used_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fighter_id"], name: "index_used_fighters_on_fighter_id"
+    t.index ["game_session_id", "fighter_id"], name: "index_used_fighters_on_game_session_id_and_fighter_id", unique: true
+    t.index ["game_session_id"], name: "index_used_fighters_on_game_session_id"
+    t.index ["used_by_id"], name: "index_used_fighters_on_used_by_id"
   end
 
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -59,4 +99,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_161751) do
 
   add_foreign_key "fighter_weight_classes", "fighters"
   add_foreign_key "fighter_weight_classes", "weight_classes"
+  add_foreign_key "game_players", "game_sessions"
+  add_foreign_key "game_players", "users"
+  add_foreign_key "game_sessions", "users", column: "creator_id"
+  add_foreign_key "game_sessions", "users", column: "current_turn_player_id"
+  add_foreign_key "used_fighters", "fighters"
+  add_foreign_key "used_fighters", "game_sessions"
+  add_foreign_key "used_fighters", "users", column: "used_by_id"
 end
