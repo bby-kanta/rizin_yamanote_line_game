@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_09_164140) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_09_174752) do
   create_table "fighter_weight_classes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "fighter_id", null: false
     t.bigint "weight_class_id", null: false
@@ -29,6 +29,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_09_164140) do
     t.boolean "is_active", default: true, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "full_name_english"
     t.index ["full_name"], name: "index_fighters_on_full_name", unique: true
     t.index ["full_name_hiragana"], name: "index_fighters_on_full_name_hiragana", unique: true
     t.index ["is_active"], name: "index_fighters_on_is_active"

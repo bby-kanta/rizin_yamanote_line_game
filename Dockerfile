@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     yarn \
     tzdata \
     yaml-dev \
-    git
+    git \
+    firefox-esr
 
 WORKDIR /app
 
