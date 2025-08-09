@@ -1,5 +1,154 @@
 <h1><%= @game_session.name %></h1>
 
+<script>
+  let gameChannel = null;
+  
+  function initializeActionCable() {
+    if (window.App && window.App.cable) {
+      const gameSessionId = <%= @game_session.id %>;
+      
+      gameChannel = window.App.cable.subscriptions.create(
+        { 
+          channel: "GameChannel", 
+          game_session_id: gameSessionId 
+        },
+        {
+          connected: function() {
+            console.log(`Connected to GameChannel for session ${gameSessionId}`);
+          },
+
+          disconnected: function() {
+            console.log('Disconnected from GameChannel');
+          },
+
+          received: function(data) {
+            console.log('Received game update:', data);
+            handleGameUpdate(data);
+          }
+        }
+      );
+    } else {
+      console.error('Action Cable not available, retrying in 1 second...');
+      setTimeout(initializeActionCable, 1000);
+    }
+  }
+  
+  document.addEventListener('DOMContentLoaded', function() {
+    // ActionCableの初期化を少し遅らせる
+    setTimeout(initializeActionCable, 500);
+  });
+  
+  function handleGameUpdate(data) {
+    console.log('Handling update:', data.type);
+    
+    // 通知を表示
+    if (data.message) {
+      showNotification(data.message);
+    }
+    
+    // タイプに応じて処理
+    switch(data.type) {
+      case 'player_action':
+        if (data.current_player_name) {
+          updateCurrentTurn(data.current_player_name, data.current_player_id);
+        }
+        // ページをリロード（簡易版）
+        setTimeout(() => {
+          location.reload();
+        }, 2000);
+        break;
+        
+      case 'game_status':
+        if (data.status === 'finished' && data.winner) {
+          showWinnerModal(data.winner);
+        } else if (data.status === 'playing') {
+          setTimeout(() => {
+            location.reload();
+          }, 1000);
+        }
+        break;
+        
+      case 'player_joined':
+      case 'player_left':
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+        break;
+    }
+  }
+  
+  function updateCurrentTurn(playerName, playerId) {
+    const currentUserId = document.body.dataset.currentUserId;
+    const turnMessage = document.querySelector('.current-turn-message');
+    
+    if (turnMessage) {
+      if (playerId == currentUserId) {
+        turnMessage.innerHTML = '<div class="alert alert-success">あなたのターンです！</div>';
+      } else {
+        turnMessage.innerHTML = `<div class="alert alert-info">${playerName}さんのターンです。お待ちください。</div>`;
+      }
+    }
+  }
+  
+  function showNotification(message) {
+    // 既存の通知を削除
+    const existingNotifications = document.querySelectorAll('.game-notification');
+    existingNotifications.forEach(n => n.remove());
+    
+    // 新しい通知を作成
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed game-notification';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; max-width: 400px;';
+    notification.innerHTML = `
+      <i class="fas fa-info-circle me-2"></i>${message}
+      <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // 5秒後に自動削除
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 5000);
+  }
+  
+  function showWinnerModal(winner) {
+    const modalHtml = `
+      <div class="modal fade" id="winnerModal" tabindex="-1">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+              <h5 class="modal-title">🎉 ゲーム終了</h5>
+            </div>
+            <div class="modal-body text-center">
+              <h3 class="text-success">${winner}さんの勝利です！</h3>
+              <p>おめでとうございます！</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" onclick="location.reload()">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    // 既存のモーダルを削除
+    const existingModal = document.getElementById('winnerModal');
+    if (existingModal) {
+      existingModal.remove();
+    }
+    
+    // 新しいモーダルを追加
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // モーダルを表示
+    const modal = new bootstrap.Modal(document.getElementById('winnerModal'));
+    modal.show();
+  }
+</script>
+
 <div class="row">
   <!-- ゲーム状態表示 -->
   <div class="col-md-8">

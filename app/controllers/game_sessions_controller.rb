@@ -71,6 +71,14 @@ class GameSessionsController < ApplicationController
           turn_order: next_turn_order,
           joined_at: Time.current
         )
+        
+        # プレイヤー参加をブロードキャスト
+        broadcast_game_update(
+          type: 'player_joined',
+          player_name: current_user.name,
+          players: serialize_players
+        )
+        
         redirect_to @game_session, notice: 'ゲームに参加しました。'
       end
     else
@@ -104,6 +112,16 @@ class GameSessionsController < ApplicationController
     if @game_session.game_players.count < 2
       redirect_to @game_session, alert: '最低2人のプレイヤーが必要です。'
     elsif @game_session.start_game!
+      # ゲーム開始をブロードキャスト
+      broadcast_game_update(
+        type: 'game_status',
+        status: 'playing',
+        message: 'ゲームが開始されました！',
+        current_player_name: @game_session.current_turn_player.name,
+        current_player_id: @game_session.current_turn_player.id,
+        players: serialize_players
+      )
+      
       redirect_to @game_session, notice: 'ゲームを開始しました！'
     else
       redirect_to @game_session, alert: 'ゲームを開始できませんでした。'
@@ -134,6 +152,20 @@ class GameSessionsController < ApplicationController
       redirect_to @game_session, alert: 'この選手は既に使用されています。'
     elsif @game_session.use_fighter!(fighter, current_user)
       @game_session.next_turn!
+      
+      # Action Cable でリアルタイム更新をブロードキャスト
+      broadcast_game_update(
+        type: 'player_action',
+        message: "#{current_user.name}さんが#{fighter.display_name}を選択しました",
+        used_fighter: {
+          display_name: fighter.display_name,
+          used_by: current_user.name
+        },
+        current_player_name: @game_session.current_turn_player.name,
+        current_player_id: @game_session.current_turn_player.id,
+        players: serialize_players
+      )
+      
       redirect_to @game_session, notice: "#{fighter.display_name}を選択しました。"
     else
       redirect_to @game_session, alert: '選手を選択できませんでした。'
@@ -146,8 +178,27 @@ class GameSessionsController < ApplicationController
     elsif @game_session.eliminate_player!(current_user)
       if @game_session.finished?
         winner = @game_session.winner
+        
+        # ゲーム終了をブロードキャスト
+        broadcast_game_update(
+          type: 'game_status',
+          status: 'finished',
+          winner: winner&.name,
+          message: "#{current_user.name}さんがリタイアしました。#{winner&.name}さんの勝利です！",
+          players: serialize_players
+        )
+        
         redirect_to @game_session, notice: "リタイアしました。#{winner&.name}さんの勝利です！"
       else
+        # リタイアをブロードキャスト
+        broadcast_game_update(
+          type: 'player_action',
+          message: "#{current_user.name}さんがリタイアしました",
+          current_player_name: @game_session.current_turn_player.name,
+          current_player_id: @game_session.current_turn_player.id,
+          players: serialize_players
+        )
+        
         redirect_to @game_session, notice: 'リタイアしました。'
       end
     else
@@ -175,5 +226,21 @@ class GameSessionsController < ApplicationController
 
   def game_session_params
     params.require(:game_session).permit(:name)
+  end
+
+  def broadcast_game_update(data)
+    ActionCable.server.broadcast("game_session_#{@game_session.id}", data)
+  end
+
+  def serialize_players
+    @game_session.game_players.includes(:user).order(:turn_order).map do |game_player|
+      {
+        id: game_player.user.id,
+        name: game_player.user.name,
+        turn_order: game_player.turn_order,
+        is_eliminated: game_player.is_eliminated,
+        current_turn: game_player.current_turn?
+      }
+    end
   end
 end
