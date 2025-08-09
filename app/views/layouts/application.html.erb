@@ -34,9 +34,9 @@
     <% end %>
     
     <% if user_signed_in? %>
-      <nav style="background-color: #333; color: white; padding: 10px;">
+      <nav style="background-color: #333; color: white; padding: 10px; display: flex; align-items: center;">
         <span>こんにちは、<%= current_user.name %>さん</span>
-        <%= link_to "ログアウト", destroy_user_session_path, method: :delete, data: { turbo_method: :delete }, style: "color: white; margin-left: 20px;" %>
+        <%= button_to "ログアウト", destroy_user_session_path, method: :delete, style: "background: none; border: none; color: white; margin-left: 20px; cursor: pointer; text-decoration: underline;" %>
       </nav>
     <% end %>
     
