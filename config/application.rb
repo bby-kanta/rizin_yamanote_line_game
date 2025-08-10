@@ -26,5 +26,8 @@ module App
     
     # Add services directory to autoload paths
     config.autoload_paths << Rails.root.join("app", "services")
+
+    # render.comのホストを許可
+    config.hosts << 'xxx.onrender.com'
   end
 end

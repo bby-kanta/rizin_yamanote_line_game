@@ -1,0 +1,21 @@
+databases:
+  - name: rizin_yamanote_line_game
+    databaseName: production_iwu7
+    user: root
+    region: singapore
+
+services:
+  - type: web
+    name: rizin_yamanote_line_game
+    env: ruby
+    region: singapore
+    plan: free
+    buildCommand: "./bin/render-build.sh"
+    startCommand: "bundle exec puma -C config/puma.rb"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rizin_yamanote_line_game
+          property: connectionString
+      - key: RAILS_MASTER_KEY
+        sync: false
