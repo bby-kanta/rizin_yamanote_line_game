@@ -147,6 +147,24 @@
     const modal = new bootstrap.Modal(document.getElementById('winnerModal'));
     modal.show();
   }
+  
+  // スクロール位置維持のためのJavaScript
+  document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('fighter-search-form');
+    if (searchForm) {
+      searchForm.addEventListener('submit', function() {
+        // 現在のスクロール位置を保存
+        sessionStorage.setItem('gameSessionScrollPosition', window.scrollY);
+      });
+      
+      // ページ読み込み後にスクロール位置を復元
+      const savedScrollPosition = sessionStorage.getItem('gameSessionScrollPosition');
+      if (savedScrollPosition) {
+        window.scrollTo(0, parseInt(savedScrollPosition));
+        sessionStorage.removeItem('gameSessionScrollPosition');
+      }
+    }
+  });
 </script>
 
 <div class="container-fluid px-0">
@@ -200,7 +218,8 @@
                   </label>
                 </div>
                 
-                <%= form_with url: game_session_path(@game_session), method: :get, local: true do |form| %>
+                <%= form_with url: game_session_path(@game_session), method: :get, local: true, 
+                              data: { turbo: false }, id: "fighter-search-form" do |form| %>
                   <div class="search-input-wrapper">
                     <%= form.text_field :query, value: params[:query], 
                                         placeholder: "ひらがなで入力してください...", 
