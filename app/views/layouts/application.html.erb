@@ -51,14 +51,43 @@
     <% end %>
     
     <% if user_signed_in? %>
-      <nav class="navbar">
+      <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-          <%= link_to "🥊 RIZIN山手線ゲーム", root_path, class: "navbar-brand" %>
-          <div class="d-flex align-items-center">
-            <%= link_to "選手検索", fighters_path, class: "nav-link me-3" %>
-            <%= link_to "ゲーム", game_sessions_path, class: "nav-link me-3" %>
-            <span class="text-secondary me-3">こんにちは、<%= current_user.name %>さん</span>
-            <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "btn btn-outline-primary btn-sm" %>
+          <%= link_to "🥊 RIZIN ゲームセンター", root_path, class: "navbar-brand" %>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="gameDropdown" role="button" data-bs-toggle="dropdown">
+                  🚃 山手線ゲーム
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "ゲーム一覧", game_sessions_path, class: "dropdown-item" %></li>
+                  <li><%= link_to "新規作成", new_game_session_path, class: "dropdown-item" %></li>
+                  <li><%= link_to "履歴", history_game_sessions_path, class: "dropdown-item" %></li>
+                </ul>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="quizDropdown" role="button" data-bs-toggle="dropdown">
+                  🔍 クイズ
+                </a>
+                <ul class="dropdown-menu">
+                  <li><%= link_to "クイズ一覧", quiz_sessions_path, class: "dropdown-item" %></li>
+                  <li><%= link_to "新規作成", new_quiz_session_path, class: "dropdown-item" %></li>
+                </ul>
+              </li>
+              <li class="nav-item">
+                <%= link_to "👥 選手一覧", fighters_path, class: "nav-link" %>
+              </li>
+            </ul>
+            <div class="d-flex align-items-center">
+              <span class="text-light me-3">
+                <i class="fas fa-user"></i> <%= current_user.name %>
+              </span>
+              <%= button_to "ログアウト", destroy_user_session_path, method: :delete, class: "btn btn-outline-light btn-sm" %>
+            </div>
           </div>
         </div>
       </nav>

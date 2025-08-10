@@ -1,0 +1,69 @@
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <h1 class="mb-4">🆕 新しいクイズを作成</h1>
+
+      <div class="alert alert-info">
+        <h5 class="alert-heading">📝 クイズの仕組み</h5>
+        <ul>
+          <li>選手の特徴が段階的に公開されます（簡単→詳細）</li>
+          <li>最初は誰にでも当てはまる特徴から始まり、徐々に詳細な特徴へ</li>
+          <li>早く正解するほど高得点</li>
+          <li>間違えるとペナルティ</li>
+          <li>全員が正解するか、ヒントがなくなったら終了</li>
+        </ul>
+      </div>
+
+      <% if @eligible_fighters.empty? %>
+        <div class="alert alert-warning">
+          <h5 class="alert-heading">⚠️ クイズ対象の選手がいません</h5>
+          <p>クイズを作成するには、まず選手の特徴を登録する必要があります。</p>
+          <%= link_to "選手一覧へ", fighters_path, class: "btn btn-primary" %>
+        </div>
+      <% else %>
+        <%= form_with model: @quiz_session, local: true do |f| %>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">クイズ対象の選手を選択</h5>
+              <p class="text-muted">選手はランダムに選ばれます</p>
+              
+              <div class="alert alert-warning">
+                <strong>注意:</strong> プレイヤーには選手名は表示されません
+              </div>
+
+              <div class="mb-3">
+                <%= f.label :target_fighter_id, "対象選手", class: "form-label" %>
+                <%= f.select :target_fighter_id, 
+                    options_for_select([["ランダムに選択", ""]] + @eligible_fighters.map { |f| [f.display_name + " (特徴数: #{f.fighter_features.count})", f.id] }), 
+                    { prompt: "選手を選択してください" }, 
+                    class: "form-select form-select-lg",
+                    required: true %>
+                <div class="form-text">
+                  特徴が登録されている選手のみ表示されています
+                </div>
+              </div>
+
+              <div class="d-grid gap-2">
+                <%= f.submit "クイズを作成", class: "btn btn-primary btn-lg" %>
+                <%= link_to "キャンセル", quiz_sessions_path, class: "btn btn-outline-secondary" %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="card mt-3">
+          <div class="card-body">
+            <h5 class="card-title">💡 ヒント</h5>
+            <ul>
+              <li>あなたも自動的に最初の参加者として登録されます</li>
+              <li>特徴が多い選手ほど面白いクイズになります</li>
+              <li>レベル設定が適切な選手を選びましょう</li>
+              <li>最低2人の参加者が必要です（あなた含む）</li>
+              <li>他の参加者が集まったら「開始」ボタンを押してください</li>
+            </ul>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

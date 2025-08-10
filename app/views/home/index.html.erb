@@ -1,13 +1,30 @@
-<div class="hero-section bg-primary text-white p-5 mb-5">
+<div class="hero-section bg-gradient text-white p-5 mb-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
   <div class="container text-center">
-    <h1 class="display-4 mb-3">🥊 RIZIN山手線ゲーム</h1>
-    <p class="lead mb-4">RIZIN選手の名前でみんなでしりとりゲーム！<br>ひらがな入力で検索、重複防止、ターン制で楽しもう！</p>
+    <h1 class="display-4 mb-3">🥊 RIZIN ゲームセンター</h1>
+    <p class="lead mb-4">RIZIN選手で楽しむ2つのゲーム！</p>
     
     <% if user_signed_in? %>
-      <div class="d-flex justify-content-center gap-3">
-        <%= link_to "🎮 ゲームを始める", game_sessions_path, class: "btn btn-success btn-lg" %>
-        <%= link_to "🔍 選手を探す", fighters_path, class: "btn btn-outline-light btn-lg" %>
+      <div class="row justify-content-center mb-4">
+        <div class="col-md-5 mb-3">
+          <div class="card bg-white text-dark shadow-lg">
+            <div class="card-body text-center">
+              <h3 class="card-title">🚃 山手線ゲーム</h3>
+              <p class="card-text">選手名でしりとり対戦！<br>ターン制で緊張感MAX</p>
+              <%= link_to "プレイする", game_sessions_path, class: "btn btn-success btn-lg px-4" %>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-5 mb-3">
+          <div class="card bg-white text-dark shadow-lg">
+            <div class="card-body text-center">
+              <h3 class="card-title">🔍 選手当てクイズ</h3>
+              <p class="card-text">ヒントから選手を推理！<br>知識と速さで勝負</p>
+              <%= link_to "プレイする", quiz_sessions_path, class: "btn btn-primary btn-lg px-4" %>
+            </div>
+          </div>
+        </div>
       </div>
+      <%= link_to "👥 選手一覧", fighters_path, class: "btn btn-outline-light btn-lg" %>
     <% else %>
       <div class="d-flex justify-content-center gap-3">
         <%= link_to "ログイン", new_user_session_path, class: "btn btn-light btn-lg" %>
@@ -19,167 +36,306 @@
 
 <% if user_signed_in? %>
   <div class="row">
-    <!-- 参加中のゲーム -->
-    <div class="col-md-6 mb-4">
-      <div class="card">
+    <!-- 山手線ゲーム状況 -->
+    <div class="col-lg-6 mb-4">
+      <div class="card border-success">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">🚃 山手線ゲーム</h5>
+        </div>
         <div class="card-body">
-          <h5 class="card-title">
-            <i class="fas fa-gamepad me-2"></i>参加中のゲーム
-          </h5>
           <% current_game = current_user.current_game_session %>
           <% if current_game %>
-            <div class="alert alert-info">
+            <div class="alert alert-success">
               <strong><%= current_game.name %></strong><br>
               <small class="text-muted">
                 状態: <%= current_game.waiting? ? '待機中' : 'プレイ中' %> | 
                 参加者: <%= current_game.players.count %>人
               </small>
             </div>
-            <%= link_to "ゲームに入る", current_game, class: "btn btn-primary" %>
+            <%= link_to "ゲームに入る", current_game, class: "btn btn-success" %>
           <% else %>
             <p class="text-muted mb-3">現在参加中のゲームはありません</p>
-            <%= link_to "新しいゲームを作成", new_game_session_path, class: "btn btn-success" %>
+            <div class="d-grid gap-2">
+              <%= link_to "🆕 新規ゲーム作成", new_game_session_path, class: "btn btn-outline-success" %>
+              <%= link_to "🎯 ゲーム一覧", game_sessions_path, class: "btn btn-outline-secondary" %>
+            </div>
+          <% end %>
+          
+          <hr>
+          
+          <h6 class="text-muted">参加可能なゲーム</h6>
+          <% joinable_games = GameSession.joinable.includes(:creator, :players).limit(2) %>
+          <% if joinable_games.any? %>
+            <% joinable_games.each do |game| %>
+              <div class="card mb-2">
+                <div class="card-body p-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong><%= game.name %></strong><br>
+                      <small class="text-muted">作成者: <%= game.creator.name %> | <%= game.players.count %>人</small>
+                    </div>
+                    <% if !current_user.current_game_session %>
+                      <%= button_to "参加", join_game_session_path(game), method: :patch, class: "btn btn-success btn-sm" %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted small">参加可能なゲームがありません</p>
           <% end %>
         </div>
       </div>
     </div>
 
-    <!-- クイックアクセス -->
+    <!-- クイズ状況 -->
+    <div class="col-lg-6 mb-4">
+      <div class="card border-primary">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">🔍 選手当てクイズ</h5>
+        </div>
+        <div class="card-body">
+          <% current_quiz = current_user.current_quiz_session %>
+          <% if current_quiz %>
+            <div class="alert alert-primary">
+              <strong>クイズセッション進行中</strong><br>
+              <small class="text-muted">
+                状態: <%= current_quiz.waiting? ? '待機中' : current_quiz.started? ? 'プレイ中' : '終了' %> |
+                参加者: <%= current_quiz.participants.count %>人
+              </small>
+            </div>
+            <%= link_to "クイズに入る", current_quiz, class: "btn btn-primary" %>
+          <% else %>
+            <p class="text-muted mb-3">現在参加中のクイズはありません</p>
+            <div class="d-grid gap-2">
+              <%= link_to "🆕 新規クイズ作成", new_quiz_session_path, class: "btn btn-outline-primary" %>
+              <%= link_to "🎯 クイズ一覧", quiz_sessions_path, class: "btn btn-outline-secondary" %>
+            </div>
+          <% end %>
+          
+          <hr>
+          
+          <h6 class="text-muted">参加可能なクイズ</h6>
+          <% joinable_quizzes = QuizSession.waiting.includes(:creator, :target_fighter, :participants).limit(2) %>
+          <% if joinable_quizzes.any? %>
+            <% joinable_quizzes.each do |quiz| %>
+              <div class="card mb-2">
+                <div class="card-body p-2">
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>クイズ #<%= quiz.id %></strong><br>
+                      <small class="text-muted">作成者: <%= quiz.creator.name %> | <%= quiz.participants.count %>人</small>
+                    </div>
+                    <% if !current_user.current_quiz_session %>
+                      <%= button_to "参加", join_quiz_session_path(quiz), method: :patch, class: "btn btn-primary btn-sm" %>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+            <% end %>
+          <% else %>
+            <p class="text-muted small">参加可能なクイズがありません</p>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 統計情報 -->
+  <div class="row">
     <div class="col-md-6 mb-4">
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">
-            <i class="fas fa-bolt me-2"></i>クイックアクセス
-          </h5>
-          <div class="d-grid gap-2">
-            <%= link_to "🆕 新しいゲームを作成", new_game_session_path, class: "btn btn-outline-success" %>
-            <%= link_to "🎯 ゲーム一覧", game_sessions_path, class: "btn btn-outline-primary" %>
-            <%= link_to "👥 選手検索", fighters_path, class: "btn btn-outline-info" %>
+          <h5 class="card-title">📊 あなたの山手線ゲーム戦績</h5>
+          <% game_stats = current_user.game_players.joins(:game_session).merge(GameSession.ended) %>
+          <div class="row text-center">
+            <div class="col">
+              <h3 class="text-primary"><%= game_stats.count %></h3>
+              <small class="text-muted">参加回数</small>
+            </div>
+            <div class="col">
+              <h3 class="text-success"><%= current_user.created_game_sessions.where.not(winner_user_id: nil).where(winner_user_id: current_user.id).count %></h3>
+              <small class="text-muted">勝利数</small>
+            </div>
+            <div class="col">
+              <h3 class="text-info"><%= current_user.used_fighters.count %></h3>
+              <small class="text-muted">使用選手数</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">📊 あなたのクイズ戦績</h5>
+          <% quiz_stats = current_user.quiz_stats %>
+          <div class="row text-center">
+            <div class="col">
+              <h3 class="text-primary"><%= quiz_stats[:total_sessions] %></h3>
+              <small class="text-muted">参加回数</small>
+            </div>
+            <div class="col">
+              <h3 class="text-success"><%= quiz_stats[:won_sessions] %></h3>
+              <small class="text-muted">勝利数</small>
+            </div>
+            <div class="col">
+              <h3 class="text-info">
+                <% accuracy = quiz_stats[:total_answers] > 0 ? (quiz_stats[:correct_answers].to_f / quiz_stats[:total_answers] * 100).round : 0 %>
+                <%= accuracy %>%
+              </h3>
+              <small class="text-muted">正答率</small>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 参加可能なゲーム -->
+  <!-- 最近の履歴 -->
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">
-        <i class="fas fa-users me-2"></i>参加可能なゲーム
-      </h5>
-      <% joinable_games = GameSession.joinable.includes(:creator, :players).limit(3) %>
-      <% if joinable_games.any? %>
-        <div class="row">
-          <% joinable_games.each do |game| %>
-            <div class="col-md-4 mb-3">
-              <div class="card border">
-                <div class="card-body">
-                  <h6 class="card-title"><%= game.name %></h6>
-                  <p class="card-text small">
-                    作成者: <%= game.creator.name %><br>
-                    参加者: <%= game.players.count %>人
-                  </p>
-                  <% if current_user.joined_game?(game) %>
-                    <%= link_to "ゲームに入る", game, class: "btn btn-primary btn-sm" %>
-                  <% elsif current_user.current_game_session %>
-                    <small class="text-muted">他のゲームに参加中</small>
-                  <% else %>
-                    <%= button_to "参加", join_game_session_path(game), method: :patch, class: "btn btn-success btn-sm" %>
+      <h5 class="card-title">🕐 最近のアクティビティ</h5>
+      <ul class="nav nav-tabs" id="historyTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="game-tab" data-bs-toggle="tab" data-bs-target="#game-history" type="button">山手線ゲーム</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="quiz-tab" data-bs-toggle="tab" data-bs-target="#quiz-history" type="button">クイズ</button>
+        </li>
+      </ul>
+      <div class="tab-content" id="historyTabContent">
+        <div class="tab-pane fade show active" id="game-history" role="tabpanel">
+          <% recent_games = GameSession.ended.includes(:winner_user, :game_players).order(ended_at: :desc).limit(5) %>
+          <% if recent_games.any? %>
+            <div class="table-responsive mt-3">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>ゲーム名</th>
+                    <th>勝者</th>
+                    <th>参加者数</th>
+                    <th>終了日時</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% recent_games.each do |session| %>
+                    <tr>
+                      <td><%= link_to session.name, session %></td>
+                      <td>
+                        <% if session.winner_user %>
+                          <span class="badge bg-success">
+                            <%= session.winner_user.name %>
+                          </span>
+                        <% end %>
+                      </td>
+                      <td><%= session.game_players.count %>人</td>
+                      <td><%= session.ended_at&.strftime("%m/%d %H:%M") %></td>
+                    </tr>
                   <% end %>
-                </div>
-              </div>
+                </tbody>
+              </table>
             </div>
+          <% else %>
+            <p class="text-muted mt-3">まだ履歴がありません</p>
           <% end %>
         </div>
-        <%= link_to "もっと見る", game_sessions_path, class: "btn btn-outline-secondary btn-sm" %>
-      <% else %>
-        <p class="text-muted">現在参加可能なゲームがありません。新しいゲームを作成してみましょう！</p>
-        <%= link_to "ゲームを作成", new_game_session_path, class: "btn btn-success" %>
-      <% end %>
-    </div>
-  </div>
-
-  <!-- 過去のセッション -->
-  <% if @recent_sessions.any? %>
-    <div class="card mt-4">
-      <div class="card-body">
-        <h5 class="card-title">
-          <i class="fas fa-history me-2"></i>最近終了したゲーム
-        </h5>
-        <div class="table-responsive">
-          <table class="table table-hover">
-            <thead>
-              <tr>
-                <th>ゲーム名</th>
-                <th>勝者</th>
-                <th>参加者数</th>
-                <th>終了日時</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              <% @recent_sessions.each do |session| %>
-                <tr>
-                  <td><%= session.name %></td>
-                  <td>
-                    <% if session.winner_user %>
-                      <span class="badge bg-success">
-                        <i class="fas fa-trophy me-1"></i>
-                        <%= session.winner_user.name %>
-                      </span>
-                    <% else %>
-                      <span class="text-muted">-</span>
-                    <% end %>
-                  </td>
-                  <td><%= session.game_players.count %>人</td>
-                  <td><%= session.ended_at&.strftime("%m/%d %H:%M") %></td>
-                  <td>
-                    <%= link_to "詳細", session, class: "btn btn-sm btn-outline-primary" %>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
+        <div class="tab-pane fade" id="quiz-history" role="tabpanel">
+          <% recent_quizzes = QuizSession.ended.includes(:winner_user, :target_fighter, :quiz_participants).order(ended_at: :desc).limit(5) %>
+          <% if recent_quizzes.any? %>
+            <div class="table-responsive mt-3">
+              <table class="table table-hover">
+                <thead>
+                  <tr>
+                    <th>クイズ</th>
+                    <th>正解選手</th>
+                    <th>勝者</th>
+                    <th>終了日時</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% recent_quizzes.each do |quiz| %>
+                    <tr>
+                      <td><%= link_to "クイズ ##{quiz.id}", quiz %></td>
+                      <td><%= quiz.target_fighter.display_name %></td>
+                      <td>
+                        <% if quiz.winner_user %>
+                          <span class="badge bg-primary">
+                            <%= quiz.winner_user.name %>
+                          </span>
+                        <% end %>
+                      </td>
+                      <td><%= quiz.ended_at&.strftime("%m/%d %H:%M") %></td>
+                    </tr>
+                  <% end %>
+                </tbody>
+              </table>
+            </div>
+          <% else %>
+            <p class="text-muted mt-3">まだ履歴がありません</p>
+          <% end %>
         </div>
-        <%= link_to "もっと見る →", history_game_sessions_path, class: "btn btn-outline-secondary btn-sm" %>
       </div>
     </div>
-  <% end %>
+  </div>
 
 <% else %>
   <!-- 未ログインユーザー向けの説明 -->
   <div class="row">
-    <div class="col-md-4 mb-4">
-      <div class="card text-center h-100">
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white">
+          <h4>🚃 山手線ゲーム</h4>
+        </div>
         <div class="card-body">
-          <i class="fas fa-search fa-3x text-primary mb-3"></i>
-          <h5 class="card-title">選手検索</h5>
-          <p class="card-text">ひらがなで選手名を検索。候補が1件に絞り込まれると自動提案！</p>
+          <h5>遊び方</h5>
+          <ol>
+            <li>RIZIN選手の名前を順番に答える</li>
+            <li>前の人の答えた選手名の最後の文字から始まる選手を答える</li>
+            <li>同じ選手は使えない</li>
+            <li>制限時間内に答えられなかったら脱落</li>
+          </ol>
+          <hr>
+          <h5>特徴</h5>
+          <ul>
+            <li>🔍 ひらがな検索で簡単入力</li>
+            <li>🚫 重複自動チェック</li>
+            <li>⏱️ リアルタイムターン制</li>
+            <li>🏆 勝者記録システム</li>
+          </ul>
         </div>
       </div>
     </div>
-    <div class="col-md-4 mb-4">
-      <div class="card text-center h-100">
-        <div class="card-body">
-          <i class="fas fa-sync-alt fa-3x text-success mb-3"></i>
-          <h5 class="card-title">ターン制</h5>
-          <p class="card-text">山手線ゲーム本来のルール。順番に選手名を答えていきます。</p>
+    
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white">
+          <h4>🔍 選手当てクイズ</h4>
         </div>
-      </div>
-    </div>
-    <div class="col-md-4 mb-4">
-      <div class="card text-center h-100">
         <div class="card-body">
-          <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
-          <h5 class="card-title">重複防止</h5>
-          <p class="card-text">使用済み選手は自動記録。同じ選手は使えません。</p>
+          <h5>遊び方</h5>
+          <ol>
+            <li>選手の特徴が段階的に公開される</li>
+            <li>簡単な特徴から詳細な特徴へ</li>
+            <li>早く正解するほど高得点</li>
+            <li>間違えるとペナルティ</li>
+          </ol>
+          <hr>
+          <h5>特徴</h5>
+          <ul>
+            <li>📊 3段階の難易度</li>
+            <li>🎯 速さと正確性で競う</li>
+            <li>💡 カテゴリ別ヒント</li>
+            <li>🏅 ポイントランキング</li>
+          </ul>
         </div>
       </div>
     </div>
   </div>
 
   <div class="text-center mt-4">
-    <p class="lead">今すぐ始めよう！</p>
+    <p class="lead">今すぐ始めて、RIZIN知識を試そう！</p>
     <%= link_to "アカウント作成", new_user_registration_path, class: "btn btn-primary btn-lg me-3" %>
     <%= link_to "ログイン", new_user_session_path, class: "btn btn-outline-primary btn-lg" %>
   </div>

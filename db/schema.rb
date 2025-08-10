@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_10_044442) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_10_060730) do
   create_table "fighter_feature_categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -89,15 +89,31 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_044442) do
   create_table "quiz_answers", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "quiz_session_id", null: false
     t.bigint "user_id", null: false
-    t.bigint "fighter_id", null: false
+    t.bigint "fighter_id"
     t.boolean "is_correct", null: false
     t.datetime "submitted_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "hint_index"
     t.index ["fighter_id"], name: "index_quiz_answers_on_fighter_id"
     t.index ["quiz_session_id", "user_id", "submitted_at"], name: "idx_on_quiz_session_id_user_id_submitted_at_c0a4fe3553"
     t.index ["quiz_session_id"], name: "index_quiz_answers_on_quiz_session_id"
     t.index ["user_id"], name: "index_quiz_answers_on_user_id"
+  end
+
+  create_table "quiz_participants", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "quiz_session_id", null: false
+    t.bigint "user_id", null: false
+    t.integer "miss_count", default: 0
+    t.datetime "answered_at"
+    t.integer "points", default: 0
+    t.boolean "is_winner", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "responded_at"
+    t.index ["quiz_session_id", "user_id"], name: "index_quiz_participants_on_quiz_session_id_and_user_id", unique: true
+    t.index ["quiz_session_id"], name: "index_quiz_participants_on_quiz_session_id"
+    t.index ["user_id"], name: "index_quiz_participants_on_user_id"
   end
 
   create_table "quiz_sessions", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -163,6 +179,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_044442) do
   add_foreign_key "quiz_answers", "fighters"
   add_foreign_key "quiz_answers", "quiz_sessions"
   add_foreign_key "quiz_answers", "users"
+  add_foreign_key "quiz_participants", "quiz_sessions"
+  add_foreign_key "quiz_participants", "users"
   add_foreign_key "quiz_sessions", "fighters", column: "target_fighter_id"
   add_foreign_key "quiz_sessions", "users", column: "creator_id"
   add_foreign_key "quiz_sessions", "users", column: "winner_user_id"

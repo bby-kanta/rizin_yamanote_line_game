@@ -1,0 +1,306 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-8">
+      <h1 class="mb-4">
+        🔍 クイズ #<%= @quiz_session.id %>
+        <% if @quiz_session.waiting? %>
+          <span class="badge bg-warning text-dark">待機中</span>
+        <% elsif @quiz_session.started? %>
+          <span class="badge bg-success">プレイ中</span>
+        <% else %>
+          <span class="badge bg-secondary">終了</span>
+        <% end %>
+      </h1>
+
+      <!-- ゲーム状態に応じた表示 -->
+      <% if @quiz_session.waiting? %>
+        <div class="alert alert-info">
+          <h5 class="alert-heading">⏳ ゲーム開始を待っています</h5>
+          <p>作成者: <%= @quiz_session.creator.name %></p>
+          <% if @quiz_session.creator == current_user && @quiz_session.participants.count >= 2 %>
+            <%= button_to "ゲームを開始", start_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-success btn-lg" %>
+          <% elsif @quiz_session.creator == current_user %>
+            <p class="text-muted">他の参加者を待っています...（最低2人必要）</p>
+          <% elsif @can_join %>
+            <%= button_to "参加する", join_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-primary btn-lg" %>
+          <% elsif @participant %>
+            <p>参加済み - ゲーム開始を待っています</p>
+          <% end %>
+        </div>
+
+      <% elsif @quiz_session.started? %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">現在のヒント #<%= @quiz_session.current_hint_index + 1 %></h5>
+          </div>
+          <div class="card-body" id="current-hint">
+            <% if @current_hint %>
+              <div class="alert alert-light">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    <span class="badge bg-secondary me-2"><%= @current_hint.category_name %></span>
+                    <span class="badge bg-info">レベル <%= @current_hint.level %></span>
+                  </div>
+                </div>
+                <h4 class="mt-3"><%= @current_hint.feature %></h4>
+              </div>
+            <% else %>
+              <p class="text-muted">ヒントがありません</p>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- 回答フォーム -->
+        <% if @participant && !@participant.answered? && !@quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).exists? %>
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5 class="mb-0">回答する</h5>
+            </div>
+            <div class="card-body">
+              <form action="<%= submit_answer_quiz_session_path(@quiz_session) %>" method="post" id="answer-form" data-turbo="false" data-method="post">
+                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                <input type="hidden" name="_method" value="post">
+                <div class="mb-3">
+                  <label for="fighter_name" class="form-label">選手名（ひらがな）</label>
+                  <input type="text" name="fighter_name" class="form-control" id="fighter-search" placeholder="ひらがなで入力">
+                  <div id="fighter-suggestions" class="list-group mt-2"></div>
+                </div>
+                <input type="hidden" name="fighter_id" id="fighter-id">
+                <div class="d-flex gap-2 align-items-center">
+                  <input type="submit" value="回答" class="btn btn-primary" id="submit-answer" disabled>
+                  <span class="text-muted">ミス: <%= @participant.miss_count %>回</span>
+                </div>
+              </form>
+              
+              <!-- パスボタンはフォーム外に配置 -->
+              <div class="mt-3 text-center">
+                <%= button_to "パス", pass_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-secondary", data: { turbo: false } %>
+              </div>
+            </div>
+          </div>
+        <% elsif @participant && @participant.answered? %>
+          <div class="alert alert-success">
+            <h5 class="alert-heading">✅ 正解です！</h5>
+            <p>他の参加者の回答を待っています...</p>
+          </div>
+        <% elsif @participant && @quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).exists? %>
+          <% current_answer = @quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).last %>
+          <div class="alert alert-<%= current_answer.passed? ? 'secondary' : 'warning' %>">
+            <% if current_answer.passed? %>
+              <h5 class="alert-heading">⏭️ パスしました</h5>
+              <p>他の参加者の回答を待っています...</p>
+            <% else %>
+              <h5 class="alert-heading">❌ 不正解でした</h5>
+              <p>他の参加者の回答を待っています...</p>
+            <% end %>
+          </div>
+        <% end %>
+
+      <% else %>
+        <!-- 終了時の結果表示 -->
+        <div class="card mb-4">
+          <div class="card-header bg-success text-white">
+            <h5 class="mb-0">🎊 クイズ終了！</h5>
+          </div>
+          <div class="card-body">
+            <h3>正解: <%= @quiz_session.target_fighter.display_name %></h3>
+            <% if @quiz_session.winner_user %>
+              <h4>🏆 勝者: <%= @quiz_session.winner_user.name %></h4>
+            <% else %>
+              <% max_points = @quiz_session.quiz_participants.maximum(:points) || 0 %>
+              <% top_count = @quiz_session.quiz_participants.where(points: max_points).count %>
+              <% if top_count > 1 %>
+                <h4>🤝 同点のため勝者なし</h4>
+              <% else %>
+                <h4>❌ 勝者なし</h4>
+              <% end %>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <!-- サイドバー：参加者リスト -->
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">👥 参加者 (<%= @participants.count %>人)</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group">
+            <% @participants.each do |participant| %>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <%= participant.user.name %>
+                  <% if participant.is_winner %>
+                    <span class="badge bg-warning text-dark ms-2">🏆</span>
+                  <% end %>
+                </div>
+                <div>
+                  <% if participant.answered? %>
+                    <span class="badge bg-success">正解</span>
+                  <% elsif @quiz_session.started? %>
+                    <% current_hint_answer = @current_hint_answers&.dig(participant.user_id) %>
+                    <% if current_hint_answer %>
+                      <% if current_hint_answer.passed? %>
+                        <span class="badge bg-secondary">パス</span>
+                      <% else %>
+                        <span class="badge bg-warning">不正解</span>
+                      <% end %>
+                    <% else %>
+                      <span class="badge bg-secondary">考え中...</span>
+                    <% end %>
+                  <% end %>
+                  <% if @quiz_session.ended? %>
+                    <span class="badge bg-primary"><%= participant.points %>pt</span>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+
+      <% if @quiz_session.ended? %>
+        <div class="card mt-3">
+          <div class="card-header">
+            <h5 class="mb-0">📊 最終結果</h5>
+          </div>
+          <div class="card-body">
+            <ol class="list-group list-group-numbered">
+              <% @participants.by_points.each_with_index do |participant, index| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <%= participant.user.name %>
+                  </div>
+                  <div>
+                    <span class="badge bg-primary"><%= participant.points %>pt</span>
+                    <span class="badge bg-danger">ミス: <%= participant.miss_count %>回</span>
+                  </div>
+                </li>
+              <% end %>
+            </ol>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+function initializeQuizAutocomplete() {
+  console.log('DOMContentLoaded fired');
+  
+  const searchInput = document.getElementById('fighter-search');
+  const suggestionsDiv = document.getElementById('fighter-suggestions');
+  const fighterIdInput = document.getElementById('fighter-id');
+  const submitButton = document.getElementById('submit-answer');
+  
+  console.log('Elements found:', {
+    searchInput: !!searchInput,
+    suggestionsDiv: !!suggestionsDiv,
+    fighterIdInput: !!fighterIdInput,
+    submitButton: !!submitButton
+  });
+  
+  if (searchInput && suggestionsDiv && fighterIdInput && submitButton) {
+    console.log('All elements found, setting up autocomplete');
+    
+    searchInput.addEventListener('input', function() {
+      const query = this.value;
+      
+      if (query.length < 2) {
+        suggestionsDiv.innerHTML = '';
+        fighterIdInput.value = '';
+        submitButton.disabled = true;
+        return;
+      }
+      
+      fetch(`/fighters.json?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(fighters => {
+          suggestionsDiv.innerHTML = '';
+          
+          fighters.slice(0, 5).forEach(fighter => {
+            const item = document.createElement('a');
+            item.href = '#';
+            item.className = 'list-group-item list-group-item-action';
+            item.textContent = fighter.display_name;
+            item.dataset.fighterId = fighter.id;
+            
+            item.addEventListener('click', function(e) {
+              e.preventDefault();
+              searchInput.value = fighter.full_name_hiragana;
+              fighterIdInput.value = fighter.id;
+              submitButton.disabled = false;
+              submitButton.removeAttribute('disabled');
+              suggestionsDiv.innerHTML = '';
+              console.log('Fighter selected:', fighter.display_name, 'ID:', fighter.id);
+            });
+            
+            suggestionsDiv.appendChild(item);
+          });
+        });
+    });
+  }
+  
+  // フォーム送信を確実にする
+  const form = document.getElementById('answer-form');
+  const submitBtn = document.getElementById('submit-answer');
+  
+  if (form && submitBtn) {
+    console.log('Form and submit button found');
+    
+    form.addEventListener('submit', function(e) {
+      e.preventDefault(); // 通常の送信を防ぐ
+      console.log('Form submit event triggered');
+      const fighterIdValue = document.getElementById('fighter-id').value;
+      console.log('Fighter ID:', fighterIdValue);
+      
+      if (!fighterIdValue) {
+        alert('選手を選択してください。');
+        return false;
+      }
+      
+      console.log('Submitting via fetch...');
+      
+      // fetchでPOSTリクエストを送信
+      const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const formData = new FormData();
+      formData.append('fighter_id', fighterIdValue);
+      
+      fetch('<%= submit_answer_quiz_session_path(@quiz_session) %>', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRF-Token': token,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        }
+      }).then(response => {
+        if (response.ok) {
+          return response.json();
+        } else {
+          throw new Error('Request failed');
+        }
+      }).then(data => {
+        console.log('Success:', data);
+        window.location.reload();
+      }).catch(error => {
+        console.error('Error:', error);
+        alert('エラーが発生しました。');
+      });
+    });
+  } else {
+    console.log('Some elements not found');
+  }
+}
+
+// DOMContentLoadedまたは即座に実行
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeQuizAutocomplete);
+} else {
+  // DOMは既に読み込まれている
+  initializeQuizAutocomplete();
+}
+</script>

@@ -1,0 +1,39 @@
+<div class="card">
+  <div class="card-header bg-success text-white">
+    <h5 class="mb-0">🎊 クイズ終了！</h5>
+  </div>
+  <div class="card-body">
+    <h3>正解: <%= quiz_session.target_fighter.display_name %></h3>
+    <% if quiz_session.winner_user %>
+      <h4>🏆 勝者: <%= quiz_session.winner_user.name %></h4>
+    <% else %>
+      <% max_points = quiz_session.quiz_participants.maximum(:points) || 0 %>
+      <% top_count = quiz_session.quiz_participants.where(points: max_points).count %>
+      <% if top_count > 1 %>
+        <h4>🤝 同点のため勝者なし</h4>
+      <% else %>
+        <h4>❌ 勝者なし</h4>
+      <% end %>
+    <% end %>
+    
+    <hr>
+    
+    <h5>📊 最終結果</h5>
+    <ol class="list-group list-group-numbered">
+      <% quiz_session.quiz_participants.by_points.each do |participant| %>
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <div>
+            <%= participant.user.name %>
+            <% if participant.is_winner %>
+              <span class="badge bg-warning text-dark ms-2">🏆</span>
+            <% end %>
+          </div>
+          <div>
+            <span class="badge bg-primary"><%= participant.points %>pt</span>
+            <span class="badge bg-danger">ミス: <%= participant.miss_count %>回</span>
+          </div>
+        </li>
+      <% end %>
+    </ol>
+  </div>
+</div>

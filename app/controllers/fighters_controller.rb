@@ -4,14 +4,30 @@ class FightersController < ApplicationController
   before_action :set_fighter, only: [:show, :edit, :update, :destroy]
   
   def index
-    if params[:query].present?
-      @fighters = Fighter.active.search_by_hiragana(params[:query]).limit(10)
-      @query = params[:query]
+    query = params[:query] || params[:q]
+    
+    if query.present?
+      @fighters = Fighter.active.search_by_hiragana(query).limit(10)
+      @query = query
       
       # 候補が1件に絞り込まれた場合のフラグ
       @single_candidate = @fighters.count == 1 ? @fighters.first : nil
     else
       @fighters = Fighter.active.limit(20)
+    end
+    
+    respond_to do |format|
+      format.html
+      format.json do
+        render json: @fighters.map { |f| 
+          { 
+            id: f.id, 
+            full_name: f.full_name,
+            full_name_hiragana: f.full_name_hiragana,
+            display_name: f.display_name 
+          } 
+        }
+      end
     end
   end
 

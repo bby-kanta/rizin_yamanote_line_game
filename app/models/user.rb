@@ -10,6 +10,13 @@ class User < ApplicationRecord
   has_many :game_players, dependent: :destroy
   has_many :joined_game_sessions, through: :game_players, source: :game_session
   has_many :used_fighters, foreign_key: 'used_by_id', dependent: :destroy
+
+  # アソシエーション（クイズセッション関連）
+  has_many :created_quiz_sessions, class_name: 'QuizSession', foreign_key: 'creator_id', dependent: :destroy
+  has_many :won_quiz_sessions, class_name: 'QuizSession', foreign_key: 'winner_user_id'
+  has_many :quiz_participants, dependent: :destroy
+  has_many :joined_quiz_sessions, through: :quiz_participants, source: :quiz_session
+  has_many :quiz_answers, dependent: :destroy
   
   validates :name, presence: true, length: { maximum: 50 }
   
@@ -26,5 +33,23 @@ class User < ApplicationRecord
   # 管理者権限があるかチェック
   def admin?
     is_admin
+  end
+
+  # クイズセッション関連のメソッド
+  def current_quiz_session
+    joined_quiz_sessions.where(status: ['waiting', 'started']).first
+  end
+
+  def joined_quiz?(quiz_session)
+    quiz_participants.exists?(quiz_session: quiz_session)
+  end
+
+  def quiz_stats
+    {
+      total_sessions: joined_quiz_sessions.count,
+      won_sessions: won_quiz_sessions.count,
+      total_answers: quiz_answers.count,
+      correct_answers: quiz_answers.correct.count
+    }
   end
 end

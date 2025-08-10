@@ -1,4 +1,12 @@
 Rails.application.routes.draw do
+  resources :quiz_sessions do
+    member do
+      patch :join
+      patch :start
+      post :submit_answer
+      patch :pass
+    end
+  end
   # Mount Action Cable server
   mount ActionCable.server => '/cable'
   resources :game_sessions do

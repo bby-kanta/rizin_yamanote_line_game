@@ -22,6 +22,7 @@ class GameSession < ApplicationRecord
   # スコープ
   scope :joinable, -> { where(status: :waiting) }
   scope :active, -> { where(status: [:waiting, :playing]) }
+  scope :ended, -> { where(status: :finished) }
   
   # ゲーム開始
   def start_game!
