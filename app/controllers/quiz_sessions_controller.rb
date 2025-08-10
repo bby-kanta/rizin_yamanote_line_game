@@ -92,6 +92,7 @@ class QuizSessionsController < ApplicationController
     case result
     when :correct
       # 正解をブロードキャスト
+      Rails.logger.info "About to broadcast correct answer for user #{current_user.id}"
       broadcast_participant_answered(current_user.id, 'correct')
       
       if @quiz_session.remaining_participants.empty?
@@ -197,10 +198,13 @@ class QuizSessionsController < ApplicationController
   end
 
   def broadcast_participant_answered(user_id, status)
-    ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
+    channel_name = "quiz_session_#{@quiz_session.id}"
+    data = {
       type: 'participant_answered',
       user_id: user_id,
       status: status
-    })
+    }
+    Rails.logger.info "Broadcasting to #{channel_name}: #{data}"
+    ActionCable.server.broadcast(channel_name, data)
   end
 end
