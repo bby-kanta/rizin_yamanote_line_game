@@ -29,69 +29,179 @@
         </div>
 
       <% elsif @quiz_session.started? %>
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">現在のヒント #<%= @quiz_session.current_hint_index + 1 %></h5>
-          </div>
-          <div class="card-body" id="current-hint">
-            <% if @current_hint %>
-              <div class="alert alert-light">
-                <div class="d-flex justify-content-between align-items-center">
-                  <div>
-                    <span class="badge bg-secondary me-2"><%= @current_hint.category_name %></span>
-                    <span class="badge bg-info">レベル <%= @current_hint.level %></span>
+        <!-- イケイケヒント表示 -->
+        <div class="hint-container mb-4">
+          <div class="hint-main-card">
+            <div class="hint-header">
+              <div class="hint-number-badge">
+                <span class="hint-number">#<%= @quiz_session.current_hint_index + 1 %></span>
+              </div>
+              <h2 class="hint-title">
+                <span class="hint-icon">💡</span>
+                CURRENT HINT
+              </h2>
+            </div>
+            
+            <div class="hint-body" id="current-hint">
+              <% if @current_hint %>
+                <div class="hint-content">
+                  <div class="hint-meta">
+                    <div class="category-badge">
+                      <span class="category-text"><%= @current_hint.category_name %></span>
+                    </div>
+                    <div class="level-indicator">
+                      <div class="level-label">DIFFICULTY</div>
+                      <div class="level-value level-<%= @current_hint.level %>">
+                        <% @current_hint.level.times do %>⭐<% end %>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="feature-display">
+                    <div class="feature-text">
+                      "<%= @current_hint.feature %>"
+                    </div>
+                    <div class="hint-decoration">
+                      <div class="decoration-element">🎯</div>
+                      <div class="decoration-element">✨</div>
+                      <div class="decoration-element">🔥</div>
+                    </div>
                   </div>
                 </div>
-                <h4 class="mt-3"><%= @current_hint.feature %></h4>
-              </div>
-            <% else %>
-              <p class="text-muted">ヒントがありません</p>
-            <% end %>
+              <% else %>
+                <div class="no-hint-message">
+                  <div class="no-hint-icon">🤔</div>
+                  <p>ヒントがありません</p>
+                </div>
+              <% end %>
+            </div>
           </div>
         </div>
 
-        <!-- 回答フォーム -->
+        <!-- イケイケ回答フォーム -->
         <% if @participant && !@participant.answered? && !@quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).exists? %>
-          <div class="card mb-4">
-            <div class="card-header">
-              <h5 class="mb-0">回答する</h5>
-            </div>
-            <div class="card-body">
-              <form action="<%= submit_answer_quiz_session_path(@quiz_session) %>" method="post" id="answer-form" data-turbo="false" data-method="post">
-                <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-                <input type="hidden" name="_method" value="post">
-                <div class="mb-3">
-                  <label for="fighter_name" class="form-label">選手名（ひらがな）</label>
-                  <input type="text" name="fighter_name" class="form-control" id="fighter-search" placeholder="ひらがなで入力">
-                  <div id="fighter-suggestions" class="list-group mt-2"></div>
+          <div class="answer-container mb-4">
+            <div class="answer-main-card">
+              <div class="answer-header">
+                <div class="answer-icon">🎯</div>
+                <h3 class="answer-title">YOUR GUESS</h3>
+                <div class="miss-counter">
+                  <span class="miss-label">MISSES</span>
+                  <div class="miss-value">
+                    <span class="miss-number"><%= @participant.miss_count %></span>
+                    <span class="miss-icon">❌</span>
+                  </div>
                 </div>
-                <input type="hidden" name="fighter_id" id="fighter-id">
-                <div class="d-flex gap-2 align-items-center">
-                  <input type="submit" value="回答" class="btn btn-primary" id="submit-answer" disabled>
-                  <span class="text-muted">ミス: <%= @participant.miss_count %>回</span>
-                </div>
-              </form>
+              </div>
               
-              <!-- パスボタンはフォーム外に配置 -->
-              <div class="mt-3 text-center">
-                <%= button_to "パス", pass_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-secondary", data: { turbo: false } %>
+              <div class="answer-body">
+                <form action="<%= submit_answer_quiz_session_path(@quiz_session) %>" method="post" id="answer-form" data-turbo="false" data-method="post">
+                  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+                  <input type="hidden" name="_method" value="post">
+                  
+                  <div class="fighter-search-section">
+                    <div class="search-label-container">
+                      <label for="fighter_name" class="search-label">
+                        <span class="search-icon">🔍</span>
+                        Fighter Name (Hiragana)
+                      </label>
+                    </div>
+                    
+                    <div class="search-input-wrapper">
+                      <input type="text" name="fighter_name" class="fighter-search-input" id="fighter-search" placeholder="ひらがなで入力してください...">
+                      <div class="search-decoration">
+                        <div class="search-glow"></div>
+                      </div>
+                    </div>
+                    
+                    <div id="fighter-suggestions" class="suggestions-container"></div>
+                  </div>
+                  
+                  <input type="hidden" name="fighter_id" id="fighter-id">
+                  
+                  <div class="action-buttons">
+                    <button type="submit" class="submit-btn" id="submit-answer" disabled>
+                      <span class="btn-icon">⚡</span>
+                      <span class="btn-text">SUBMIT ANSWER</span>
+                      <div class="btn-glow"></div>
+                    </button>
+                  </div>
+                </form>
+                
+                <!-- パスボタン -->
+                <div class="pass-section">
+                  <%= button_to pass_quiz_session_path(@quiz_session), method: :patch, class: "pass-btn", data: { turbo: false } do %>
+                    <span class="pass-icon">⏭️</span>
+                    <span class="pass-text">PASS THIS HINT</span>
+                  <% end %>
+                </div>
               </div>
             </div>
           </div>
         <% elsif @participant && @participant.answered? %>
-          <div class="alert alert-success">
-            <h5 class="alert-heading">✅ 正解です！</h5>
-            <p>他の参加者の回答を待っています...</p>
+          <!-- 正解状態 -->
+          <div class="status-container mb-4">
+            <div class="status-card success-status">
+              <div class="status-header">
+                <div class="status-icon success-icon">🎉</div>
+                <h3 class="status-title">CORRECT!</h3>
+              </div>
+              <div class="status-body">
+                <p class="status-message">あなたは正解しました！</p>
+                <div class="waiting-animation">
+                  <div class="waiting-text">他の参加者を待っています</div>
+                  <div class="loading-dots">
+                    <span>.</span><span>.</span><span>.</span>
+                  </div>
+                </div>
+              </div>
+              <div class="status-decoration">
+                <div class="celebration-particle">✨</div>
+                <div class="celebration-particle">🎊</div>
+                <div class="celebration-particle">⭐</div>
+              </div>
+            </div>
           </div>
         <% elsif @participant && @quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).exists? %>
           <% current_answer = @quiz_session.quiz_answers.where(user: current_user, hint_index: @quiz_session.current_hint_index).last %>
-          <div class="alert alert-<%= current_answer.passed? ? 'secondary' : 'warning' %>">
+          <div class="status-container mb-4">
             <% if current_answer.passed? %>
-              <h5 class="alert-heading">⏭️ パスしました</h5>
-              <p>他の参加者の回答を待っています...</p>
+              <!-- パス状態 -->
+              <div class="status-card pass-status">
+                <div class="status-header">
+                  <div class="status-icon pass-icon">⏭️</div>
+                  <h3 class="status-title">PASSED</h3>
+                </div>
+                <div class="status-body">
+                  <p class="status-message">このヒントをパスしました</p>
+                  <div class="waiting-animation">
+                    <div class="waiting-text">次のヒントを待っています</div>
+                    <div class="loading-dots">
+                      <span>.</span><span>.</span><span>.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             <% else %>
-              <h5 class="alert-heading">❌ 不正解でした</h5>
-              <p>他の参加者の回答を待っています...</p>
+              <!-- 不正解状態 -->
+              <div class="status-card incorrect-status">
+                <div class="status-header">
+                  <div class="status-icon incorrect-icon">😤</div>
+                  <h3 class="status-title">INCORRECT</h3>
+                </div>
+                <div class="status-body">
+                  <p class="status-message">残念！不正解でした</p>
+                  <div class="waiting-animation">
+                    <div class="waiting-text">次のチャンスを待っています</div>
+                    <div class="loading-dots">
+                      <span>.</span><span>.</span><span>.</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="status-decoration">
+                  <div class="incorrect-particle">💥</div>
+                </div>
+              </div>
             <% end %>
           </div>
         <% end %>
@@ -177,8 +287,78 @@
           </div>
         </div>
 
-        <!-- カスタムCSS -->
-        <style>
+      <% end %>
+    </div>
+
+    <!-- サイドバー：参加者リスト -->
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0">👥 参加者 (<%= @participants.count %>人)</h5>
+        </div>
+        <div class="card-body">
+          <ul class="list-group">
+            <% @participants.each do |participant| %>
+              <li class="list-group-item d-flex justify-content-between align-items-center" data-user-id="<%= participant.user_id %>">
+                <div>
+                  <%= participant.user.name %>
+                  <% if participant.is_winner %>
+                    <span class="badge bg-warning text-dark ms-2">🏆</span>
+                  <% end %>
+                </div>
+                <div>
+                  <% if participant.answered? %>
+                    <span class="badge bg-success participant-status">正解</span>
+                  <% elsif @quiz_session.started? %>
+                    <% current_hint_answer = @current_hint_answers&.dig(participant.user_id) %>
+                    <% if current_hint_answer %>
+                      <% if current_hint_answer.passed? %>
+                        <span class="badge bg-secondary participant-status">パス</span>
+                      <% else %>
+                        <span class="badge bg-warning participant-status">不正解</span>
+                      <% end %>
+                    <% else %>
+                      <span class="badge bg-secondary participant-status">考え中...</span>
+                    <% end %>
+                  <% end %>
+                  <% if @quiz_session.ended? %>
+                    <span class="badge bg-primary"><%= participant.points %>pt</span>
+                  <% end %>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+
+      <% if @quiz_session.ended? %>
+        <div class="card mt-3">
+          <div class="card-header">
+            <h5 class="mb-0">📊 最終結果</h5>
+          </div>
+          <div class="card-body">
+            <ol class="list-group list-group-numbered">
+              <% @participants.by_points.each_with_index do |participant, index| %>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <%= participant.user.name %>
+                  </div>
+                  <div>
+                    <span class="badge bg-primary"><%= participant.points %>pt</span>
+                    <span class="badge bg-danger">ミス: <%= participant.miss_count %>回</span>
+                  </div>
+                </li>
+              <% end %>
+            </ol>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<!-- カスタムCSS（全ての状態で適用） -->
+<style>
           .quiz-result-container {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 20px;
@@ -482,6 +662,502 @@
             50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
           }
 
+          /* ========== クイズ回答画面用CSS ========== */
+          
+          /* ヒント表示スタイル */
+          .hint-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+          }
+
+          .hint-main-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            margin: 3px;
+            border-radius: 17px;
+            overflow: hidden;
+          }
+
+          .hint-header {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+          }
+
+          .hint-number-badge {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 50px;
+            padding: 8px 16px;
+            min-width: 60px;
+            text-align: center;
+          }
+
+          .hint-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+          }
+
+          .hint-title {
+            font-size: 1.8rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+          }
+
+          .hint-icon {
+            font-size: 2rem;
+            animation: pulse 2s infinite;
+          }
+
+          .hint-body {
+            padding: 30px;
+          }
+
+          .hint-content {
+            text-align: center;
+          }
+
+          .hint-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+          }
+
+          .category-badge {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+          }
+
+          .level-indicator {
+            text-align: center;
+          }
+
+          .level-label {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+
+          .level-value {
+            font-size: 1.2rem;
+          }
+
+          .level-1 { color: #ff4757; }
+          .level-2 { color: #ffa502; }
+          .level-3 { color: #2ed573; }
+
+          .feature-display {
+            position: relative;
+            margin: 30px 0;
+          }
+
+          .feature-text {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #333;
+            font-style: italic;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+          }
+
+          .hint-decoration {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+          }
+
+          .decoration-element {
+            font-size: 1.5rem;
+            animation: float 3s ease-in-out infinite;
+          }
+
+          .decoration-element:nth-child(1) { animation-delay: 0s; }
+          .decoration-element:nth-child(2) { animation-delay: 0.5s; }
+          .decoration-element:nth-child(3) { animation-delay: 1s; }
+
+          /* 回答フォームスタイル */
+          .answer-container {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+          }
+
+          .answer-main-card {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            margin: 3px;
+            border-radius: 17px;
+            overflow: hidden;
+          }
+
+          .answer-header {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            padding: 20px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+          }
+
+          .answer-icon {
+            font-size: 2.5rem;
+            animation: bounce 2s infinite;
+          }
+
+          .answer-title {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            letter-spacing: 1px;
+            flex: 1;
+            text-align: center;
+          }
+
+          .miss-counter {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+          }
+
+          .miss-label {
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.8);
+            font-weight: bold;
+          }
+
+          .miss-value {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(0,0,0,0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+          }
+
+          .miss-number {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: white;
+          }
+
+          .miss-icon {
+            font-size: 1rem;
+          }
+
+          .answer-body {
+            padding: 30px;
+          }
+
+          .fighter-search-section {
+            margin-bottom: 25px;
+          }
+
+          .search-label-container {
+            margin-bottom: 15px;
+          }
+
+          .search-label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #333;
+          }
+
+          .search-icon {
+            font-size: 1.3rem;
+          }
+
+          .search-input-wrapper {
+            position: relative;
+          }
+
+          .fighter-search-input {
+            width: 100%;
+            padding: 15px 20px;
+            border: 3px solid #e1e8ed;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+          }
+
+          .fighter-search-input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 20px rgba(102,126,234,0.3);
+            transform: scale(1.02);
+          }
+
+          .suggestions-container {
+            position: relative;
+            z-index: 100;
+          }
+
+          .suggestions-container .list-group-item {
+            border: none;
+            border-radius: 10px;
+            margin: 5px 0;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+          }
+
+          .suggestions-container .list-group-item:hover {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            transform: translateX(10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+          }
+
+          .action-buttons {
+            display: flex;
+            justify-content: center;
+            margin: 25px 0;
+          }
+
+          .submit-btn {
+            position: relative;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            overflow: hidden;
+          }
+
+          .submit-btn:enabled:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102,126,234,0.4);
+          }
+
+          .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
+          }
+
+          .btn-icon {
+            font-size: 1.3rem;
+          }
+
+          .pass-section {
+            text-align: center;
+            margin-top: 20px;
+          }
+
+          .pass-btn {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+          }
+
+          .pass-btn:hover {
+            background: linear-gradient(45deg, #7f8c8d, #95a5a6);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+          }
+
+          /* ステータス表示スタイル */
+          .status-container {
+            position: relative;
+          }
+
+          .status-card {
+            border-radius: 20px;
+            padding: 0;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            position: relative;
+          }
+
+          .success-status {
+            background: linear-gradient(135deg, #2ed573 0%, #17c0eb 100%);
+          }
+
+          .pass-status {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+          }
+
+          .incorrect-status {
+            background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+          }
+
+          .status-header {
+            padding: 25px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+          }
+
+          .status-icon {
+            font-size: 3rem;
+          }
+
+          .success-icon { animation: bounce 2s infinite; }
+          .pass-icon { animation: float 3s ease-in-out infinite; }
+          .incorrect-icon { animation: shake 1s infinite; }
+
+          .status-title {
+            font-size: 2rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin: 0;
+            letter-spacing: 2px;
+          }
+
+          .status-body {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            padding: 25px;
+            text-align: center;
+          }
+
+          .status-message {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+          }
+
+          .waiting-animation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+          }
+
+          .waiting-text {
+            color: #666;
+            font-size: 1rem;
+          }
+
+          .loading-dots span {
+            font-size: 1.5rem;
+            animation: loading-dots 1.5s infinite;
+          }
+
+          .loading-dots span:nth-child(1) { animation-delay: 0s; }
+          .loading-dots span:nth-child(2) { animation-delay: 0.3s; }
+          .loading-dots span:nth-child(3) { animation-delay: 0.6s; }
+
+          .status-decoration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+          }
+
+          .celebration-particle, .incorrect-particle {
+            position: absolute;
+            font-size: 2rem;
+            animation: particle-float 3s infinite;
+          }
+
+          .celebration-particle:nth-child(1) {
+            top: 20%;
+            left: 20%;
+            animation-delay: 0s;
+          }
+
+          .celebration-particle:nth-child(2) {
+            top: 30%;
+            right: 20%;
+            animation-delay: 1s;
+          }
+
+          .celebration-particle:nth-child(3) {
+            bottom: 20%;
+            left: 30%;
+            animation-delay: 2s;
+          }
+
+          .incorrect-particle {
+            top: 50%;
+            right: 20%;
+            animation: explosion 1s infinite;
+          }
+
+          /* アニメーションキーフレーム */
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+          }
+
+          @keyframes loading-dots {
+            0%, 60%, 100% { opacity: 0; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-10px); }
+          }
+
+          @keyframes particle-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.7; }
+            50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+          }
+
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+          }
+
+          @keyframes explosion {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            50% { transform: scale(1.3) rotate(180deg); opacity: 0.7; }
+            100% { transform: scale(1) rotate(360deg); opacity: 1; }
+          }
+
           @media (max-width: 768px) {
             .fighter-info-container {
               flex-direction: column;
@@ -503,77 +1179,26 @@
             .winner-name {
               font-size: 2rem;
             }
+
+            .hint-meta {
+              flex-direction: column;
+              gap: 10px;
+            }
+
+            .answer-header {
+              flex-direction: column;
+              gap: 15px;
+            }
+
+            .feature-text {
+              font-size: 1.4rem;
+            }
+
+            .hint-title, .answer-title {
+              font-size: 1.4rem;
+            }
           }
         </style>
-      <% end %>
-    </div>
-
-    <!-- サイドバー：参加者リスト -->
-    <div class="col-md-4">
-      <div class="card">
-        <div class="card-header">
-          <h5 class="mb-0">👥 参加者 (<%= @participants.count %>人)</h5>
-        </div>
-        <div class="card-body">
-          <ul class="list-group">
-            <% @participants.each do |participant| %>
-              <li class="list-group-item d-flex justify-content-between align-items-center" data-user-id="<%= participant.user_id %>">
-                <div>
-                  <%= participant.user.name %>
-                  <% if participant.is_winner %>
-                    <span class="badge bg-warning text-dark ms-2">🏆</span>
-                  <% end %>
-                </div>
-                <div>
-                  <% if participant.answered? %>
-                    <span class="badge bg-success participant-status">正解</span>
-                  <% elsif @quiz_session.started? %>
-                    <% current_hint_answer = @current_hint_answers&.dig(participant.user_id) %>
-                    <% if current_hint_answer %>
-                      <% if current_hint_answer.passed? %>
-                        <span class="badge bg-secondary participant-status">パス</span>
-                      <% else %>
-                        <span class="badge bg-warning participant-status">不正解</span>
-                      <% end %>
-                    <% else %>
-                      <span class="badge bg-secondary participant-status">考え中...</span>
-                    <% end %>
-                  <% end %>
-                  <% if @quiz_session.ended? %>
-                    <span class="badge bg-primary"><%= participant.points %>pt</span>
-                  <% end %>
-                </div>
-              </li>
-            <% end %>
-          </ul>
-        </div>
-      </div>
-
-      <% if @quiz_session.ended? %>
-        <div class="card mt-3">
-          <div class="card-header">
-            <h5 class="mb-0">📊 最終結果</h5>
-          </div>
-          <div class="card-body">
-            <ol class="list-group list-group-numbered">
-              <% @participants.by_points.each_with_index do |participant, index| %>
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
-                    <%= participant.user.name %>
-                  </div>
-                  <div>
-                    <span class="badge bg-primary"><%= participant.points %>pt</span>
-                    <span class="badge bg-danger">ミス: <%= participant.miss_count %>回</span>
-                  </div>
-                </li>
-              <% end %>
-            </ol>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  </div>
-</div>
 
 <script>
 function initializeQuizAutocomplete() {
