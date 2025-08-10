@@ -23,7 +23,13 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :fighters
+  resources :fighters do
+    member do
+      get :features
+      post :create_features
+      post :generate_ai_features
+    end
+  end
   devise_for :users
   
   root "home#index"

@@ -2,12 +2,23 @@
   <div>
     <h1><%= @fighter.display_name %></h1>
   </div>
-  <% if user_signed_in? && current_user.admin? %>
-    <div>
-      <%= link_to "編集", edit_fighter_path(@fighter), class: "btn btn-primary me-2" %>
-      <%= button_to "削除", @fighter, method: :delete, 
-                    confirm: "#{@fighter.display_name}を削除しますか？", 
-                    class: "btn btn-danger" %>
+  <% if user_signed_in? %>
+    <% if current_user.admin? %>
+      <div>
+        <%= link_to "特徴管理", features_fighter_path(@fighter), class: "btn btn-info me-2" %>
+        <%= link_to "編集", edit_fighter_path(@fighter), class: "btn btn-primary me-2" %>
+        <%= button_to "削除", @fighter, method: :delete, 
+                      confirm: "#{@fighter.display_name}を削除しますか？", 
+                      class: "btn btn-danger" %>
+      </div>
+    <% else %>
+      <div class="alert alert-info">
+        <small>管理者のみ編集・削除・特徴管理が可能です</small>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="alert alert-warning">
+      <small>ログインが必要です</small>
     </div>
   <% end %>
 </div>

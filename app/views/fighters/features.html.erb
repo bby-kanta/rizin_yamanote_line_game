@@ -1,0 +1,349 @@
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <div>
+    <h1><%= @fighter.display_name %>の特徴管理</h1>
+    <p class="text-muted">クイズゲーム用の特徴を管理できます。</p>
+  </div>
+  <div>
+    <%= link_to "選手詳細に戻る", @fighter, class: "btn btn-secondary" %>
+  </div>
+</div>
+
+<!-- 既存の特徴一覧 -->
+<% if @features.any? %>
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="mb-0">既存の特徴（<%= @features.count %>件）</h5>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>カテゴリ</th>
+            <th>レベル</th>
+            <th>特徴</th>
+            <th>作成日</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @features.each do |feature| %>
+          <tr>
+            <td><%= feature.category_name %></td>
+            <td>
+              <span class="badge <%= feature.level == 1 ? 'bg-danger' : feature.level == 2 ? 'bg-warning' : 'bg-success' %>">
+                レベル<%= feature.level %>（<%= feature.level_text %>）
+              </span>
+            </td>
+            <td><%= feature.feature %></td>
+            <td><%= feature.created_at.strftime('%Y-%m-%d %H:%M') %></td>
+          </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<% end %>
+
+<!-- 特徴作成フォーム -->
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">新しい特徴を追加</h5>
+    <button type="button" id="generate-ai-features" class="btn btn-primary" data-fighter-id="<%= @fighter.id %>">
+      <i class="bi bi-robot"></i> AI生成
+    </button>
+  </div>
+  <div class="card-body">
+    <div id="ai-loading" style="display: none;" class="alert alert-info">
+      <div class="d-flex align-items-center">
+        <div class="spinner-border spinner-border-sm me-2" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        AI特徴を生成中です。しばらくお待ちください...
+      </div>
+    </div>
+    
+    <%= form_with url: create_features_fighter_path(@fighter), method: :post, local: true, id: "features-form" do |form| %>
+      <div id="features-container">
+        <!-- 初期フォーム行 -->
+        <div class="feature-row mb-3">
+          <div class="row">
+            <div class="col-md-3">
+              <select name="features[0][category_id]" class="form-select" required>
+                <option value="">カテゴリを選択</option>
+                <% @categories.each do |category| %>
+                  <option value="<%= category.id %>"><%= category.name %></option>
+                <% end %>
+              </select>
+            </div>
+            <div class="col-md-2">
+              <select name="features[0][level]" class="form-select" required>
+                <option value="">レベル</option>
+                <option value="1">1（難しい）</option>
+                <option value="2">2（普通）</option>
+                <option value="3">3（簡単）</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <input type="text" name="features[0][feature]" class="form-control" placeholder="特徴を入力">
+            </div>
+            <div class="col-md-1">
+              <button type="button" class="btn btn-danger remove-feature">削除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="d-flex justify-content-between">
+        <button type="button" id="add-feature" class="btn btn-secondary">
+          <i class="bi bi-plus-circle"></i> 特徴を追加
+        </button>
+        
+        <div>
+          <button type="button" id="clear-all" class="btn btn-warning me-2">全クリア</button>
+          <button type="submit" class="btn btn-success">特徴を保存</button>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<script>
+// カテゴリオプションを直接埋め込み
+const CATEGORY_OPTIONS_HTML = `
+  <option value="">カテゴリを選択</option>
+  <% @categories.each do |category| %>
+    <option value="<%= category.id %>"><%= category.name %></option>
+  <% end %>
+`;
+
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOMContentLoaded fired');
+  console.log('Category options HTML:', CATEGORY_OPTIONS_HTML);
+  
+  if (!document.getElementById('features-container')) {
+    console.log('Not on features page');
+    return;
+  }
+
+  let featureIndex = 1;
+
+  // カテゴリオプションを取得（固定HTML使用）
+  function getCategoryOptions() {
+    return CATEGORY_OPTIONS_HTML;
+  }
+
+  // 特徴追加ボタン
+  const addFeatureBtn = document.getElementById('add-feature');
+  if (addFeatureBtn) {
+    console.log('Add feature button found');
+    addFeatureBtn.addEventListener('click', function() {
+      console.log('Add feature clicked');
+      const container = document.getElementById('features-container');
+      
+      const newRow = document.createElement('div');
+      newRow.className = 'feature-row mb-3';
+      newRow.innerHTML = `
+        <div class="row">
+          <div class="col-md-3">
+            <select name="features[${featureIndex}][category_id]" class="form-select" required>
+              ${CATEGORY_OPTIONS_HTML}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select name="features[${featureIndex}][level]" class="form-select" required>
+              <option value="">レベル</option>
+              <option value="1">1（難しい）</option>
+              <option value="2">2（普通）</option>
+              <option value="3">3（簡単）</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <input type="text" name="features[${featureIndex}][feature]" class="form-control" placeholder="特徴を入力">
+          </div>
+          <div class="col-md-1">
+            <button type="button" class="btn btn-danger remove-feature">削除</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(newRow);
+      featureIndex++;
+    });
+  }
+
+  // 特徴削除（イベント委任）
+  const container = document.getElementById('features-container');
+  if (container) {
+    container.addEventListener('click', function(e) {
+      if (e.target.classList.contains('remove-feature')) {
+        e.target.closest('.feature-row').remove();
+      }
+    });
+  }
+
+  // 全クリアボタン
+  const clearAllBtn = document.getElementById('clear-all');
+  if (clearAllBtn) {
+    clearAllBtn.addEventListener('click', function() {
+      if (confirm('全ての入力内容をクリアしますか？')) {
+        container.innerHTML = `
+          <div class="feature-row mb-3">
+            <div class="row">
+              <div class="col-md-3">
+                <select name="features[0][category_id]" class="form-select" required>
+                  ${CATEGORY_OPTIONS_HTML}
+                </select>
+              </div>
+              <div class="col-md-2">
+                <select name="features[0][level]" class="form-select" required>
+                  <option value="">レベル</option>
+                  <option value="1">1（難しい）</option>
+                  <option value="2">2（普通）</option>
+                  <option value="3">3（簡単）</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <input type="text" name="features[0][feature]" class="form-control" placeholder="特徴を入力">
+              </div>
+              <div class="col-md-1">
+                <button type="button" class="btn btn-danger remove-feature">削除</button>
+              </div>
+            </div>
+          </div>
+        `;
+        featureIndex = 1;
+      }
+    });
+  }
+
+  // AI生成ボタン
+  const generateBtn = document.getElementById('generate-ai-features');
+  if (generateBtn) {
+    console.log('Generate AI button found');
+    generateBtn.addEventListener('click', function() {
+      console.log('AI generation clicked');
+      const loadingDiv = document.getElementById('ai-loading');
+      const button = this;
+      const originalText = button.innerHTML;
+      const fighterId = button.dataset.fighterId;
+      
+      if (!fighterId) {
+        alert('選手IDが見つかりません');
+        return;
+      }
+      
+      console.log('Fighter ID:', fighterId);
+      
+      // ローディング表示
+      if (loadingDiv) {
+        loadingDiv.style.display = 'block';
+      }
+      button.disabled = true;
+      button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>生成中...';
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]');
+      if (!csrfToken) {
+        alert('CSRF token not found');
+        return;
+      }
+
+      console.log('Sending request to:', `/fighters/${fighterId}/generate_ai_features`);
+
+      fetch(`/fighters/${fighterId}/generate_ai_features`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken.content
+        }
+      })
+      .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+      })
+      .then(data => {
+        console.log('Response data:', data);
+        if (data.success) {
+          populateFeatures(data.features);
+          alert(`${data.features.length}件の特徴を生成しました。`);
+        } else {
+          alert(`エラー: ${data.error}`);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('AI生成中にエラーが発生しました。詳細はコンソールをご確認ください。');
+      })
+      .finally(() => {
+        if (loadingDiv) {
+          loadingDiv.style.display = 'none';
+        }
+        button.disabled = false;
+        button.innerHTML = originalText;
+      });
+    });
+  } else {
+    console.log('Generate AI button NOT found');
+  }
+
+  // 生成された特徴をフォームに入力
+  function populateFeatures(features) {
+    console.log('Populating features:', features);
+    const container = document.getElementById('features-container');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    featureIndex = 0;
+
+    features.forEach((feature, index) => {
+      // サーバーから category_id が直接送られてくる場合はそれを使用
+      const categoryId = feature.category_id || '';
+      console.log(`Feature ${index}: category="${feature.category}" -> id="${categoryId}"`);
+
+      const newRow = document.createElement('div');
+      newRow.className = 'feature-row mb-3';
+      newRow.innerHTML = `
+        <div class="row">
+          <div class="col-md-3">
+            <select name="features[${index}][category_id]" class="form-select" required>
+              ${CATEGORY_OPTIONS_HTML}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <select name="features[${index}][level]" class="form-select" required>
+              <option value="">レベル</option>
+              <option value="1" ${feature.level == 1 ? 'selected' : ''}>1（難しい）</option>
+              <option value="2" ${feature.level == 2 ? 'selected' : ''}>2（普通）</option>
+              <option value="3" ${feature.level == 3 ? 'selected' : ''}>3（簡単）</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <input type="text" name="features[${index}][feature]" class="form-control" value="${escapeHtml(feature.feature)}" placeholder="特徴を入力">
+          </div>
+          <div class="col-md-1">
+            <button type="button" class="btn btn-danger remove-feature">削除</button>
+          </div>
+        </div>
+      `;
+      container.appendChild(newRow);
+      
+      // カテゴリIDを設定
+      const categorySelectElement = newRow.querySelector('select[name$="[category_id]"]');
+      if (categoryId) {
+        categorySelectElement.value = categoryId;
+        console.log(`Set category ID ${categoryId} for feature: ${feature.feature}`);
+      } else {
+        console.warn(`Category ID not found for: ${feature.category}`);
+      }
+    });
+
+    featureIndex = features.length;
+  }
+
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+});
+</script>
