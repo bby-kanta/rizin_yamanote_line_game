@@ -10,7 +10,27 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_10_015208) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_10_044004) do
+  create_table "fighter_feature_categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_fighter_feature_categories_on_name", unique: true
+  end
+
+  create_table "fighter_features", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "fighter_id", null: false
+    t.string "feature", null: false
+    t.integer "level", null: false
+    t.bigint "fighter_feature_category_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fighter_feature_category_id"], name: "index_fighter_features_on_fighter_feature_category_id"
+    t.index ["fighter_id", "level"], name: "index_fighter_features_on_fighter_id_and_level"
+    t.index ["fighter_id"], name: "index_fighter_features_on_fighter_id"
+    t.check_constraint "`level` between 1 and 3", name: "level_range"
+  end
+
   create_table "fighter_weight_classes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "fighter_id", null: false
     t.bigint "weight_class_id", null: false
@@ -102,6 +122,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_015208) do
     t.index ["japanese_name"], name: "index_weight_classes_on_japanese_name", unique: true
   end
 
+  add_foreign_key "fighter_features", "fighter_feature_categories"
+  add_foreign_key "fighter_features", "fighters"
   add_foreign_key "fighter_weight_classes", "fighters"
   add_foreign_key "fighter_weight_classes", "weight_classes"
   add_foreign_key "game_players", "game_sessions"
