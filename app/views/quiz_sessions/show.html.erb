@@ -1331,11 +1331,17 @@ function initializeQuizAutocomplete() {
 
 // ActionCableによるリアルタイム更新
 function setupQuizSubscription() {
+  if (!window.App || !window.App.cable) {
+    console.error('ActionCable not available for quiz, retrying in 1 second...');
+    setTimeout(setupQuizSubscription, 1000);
+    return;
+  }
+  
   const quizSessionId = <%= @quiz_session.id %>;
   
   console.log('Setting up ActionCable subscription for quiz session:', quizSessionId);
   
-  App.cable.subscriptions.create({
+  window.App.cable.subscriptions.create({
     channel: "QuizSessionChannel",
     quiz_session_id: quizSessionId
   }, {

@@ -105,6 +105,8 @@ class QuizSession < ApplicationRecord
       
       if is_correct
         participant.update!(answered_at: Time.current)
+        # 正解時に即座にポイントを計算
+        calculate_points_for_participant(participant)
         return :correct
       else
         participant.increment!(:miss_count)
@@ -138,19 +140,32 @@ class QuizSession < ApplicationRecord
     quiz_participants.where(answered_at: nil)
   end
 
-  def calculate_all_points
-    base_points = 100
-    max_hints = hints.size
+  def calculate_points_for_participant(participant)
+    return unless participant.answered_at
     
+    base_points = 100
+    hints_used = current_hint_index + 1
+    
+    # 基本ポイント（少ないヒントで正解するほど高いポイント）
+    basic_points = [base_points - (hints_used - 1) * 20, 20].max
+    
+    # パス回数を計算（fighter_id が NULL なレコード）
+    pass_count = quiz_answers.where(user: participant.user, fighter_id: nil).count
+    
+    # ペナルティ計算
+    # パス1回 = -10ポイント、ミス1回 = -30ポイント
+    # パス3回(-30ポイント) = ミス1回(-30ポイント)
+    pass_penalty = pass_count * 10
+    miss_penalty = participant.miss_count * 30
+    
+    final_points = [basic_points - pass_penalty - miss_penalty, 10].max
+    
+    participant.update!(points: final_points)
+  end
+
+  def calculate_all_points
     quiz_participants.each do |participant|
-      next unless participant.answered_at
-      
-      hints_used = current_hint_index + 1
-      basic_points = [base_points - (hints_used - 1) * 10, 10].max
-      penalty = participant.miss_count * 30
-      final_points = [basic_points - penalty, 0].max
-      
-      participant.update!(points: final_points)
+      calculate_points_for_participant(participant) if participant.answered_at
     end
     
     # 勝者を決定
