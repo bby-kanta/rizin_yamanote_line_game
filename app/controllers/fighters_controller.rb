@@ -15,9 +15,43 @@ class FightersController < ApplicationController
       # 候補が1件に絞り込まれた場合のフラグ
       @single_candidate = @fighters.count == 1 ? @fighters.first : nil
     else
-      @fighters = Fighter.active.order(:full_name)
+      # パラメータがない場合のみRedisキャッシュを使用
+      respond_to do |format|
+        format.html do
+          cache_key = "fighters:index:all"
+          
+          @fighters = Rails.cache.fetch(cache_key, expires_in: 1.hour) do
+            Rails.logger.info "Cache miss for fighters index HTML - loading from database"
+            Fighter.active.order(:full_name).to_a  # to_aで配列化して保存
+          end
+          
+          Rails.logger.info "Fighters loaded from cache for HTML: #{@fighters.size} records"
+        end
+        
+        format.json do
+          # JSON用は別途キャッシュ（シリアライズ済みデータを保存）
+          json_cache_key = "fighters:index:json:all"
+
+          json_response = Rails.cache.fetch(json_cache_key, expires_in: 1.hour) do
+            Rails.logger.info "Cache miss for fighters index JSON - loading from database"
+            Fighter.active.order(:full_name).map { |f| 
+              { 
+                id: f.id, 
+                full_name: f.full_name,
+                full_name_hiragana: f.full_name_hiragana,
+                display_name: f.display_name 
+              } 
+            }
+          end
+          
+          render json: json_response
+        end
+      end
+      
+      return # 早期リターンでqueryなしの処理を終了
     end
     
+    # query.present?の場合の処理（キャッシュなし）
     respond_to do |format|
       format.html
       format.json do
@@ -44,6 +78,8 @@ class FightersController < ApplicationController
     @fighter = Fighter.new(fighter_params)
     
     if @fighter.save
+      # キャッシュをクリア
+      clear_fighters_cache
       redirect_to @fighter, notice: '選手を作成しました。'
     else
       render :new
@@ -55,6 +91,8 @@ class FightersController < ApplicationController
   
   def update
     if @fighter.update(fighter_params)
+      # キャッシュをクリア
+      clear_fighters_cache
       redirect_to @fighter, notice: '選手情報を更新しました。'
     else
       render :edit
@@ -63,6 +101,8 @@ class FightersController < ApplicationController
   
   def destroy
     @fighter.destroy
+    # キャッシュをクリア
+    clear_fighters_cache
     redirect_to fighters_path, notice: '選手を削除しました。'
   end
 
@@ -148,5 +188,11 @@ class FightersController < ApplicationController
   def fighter_params
     params.require(:fighter).permit(:full_name, :full_name_english, :full_name_hiragana, 
                                     :ring_name, :ring_name_hiragana, :image_url, :is_active)
+  end
+  
+  def clear_fighters_cache
+    Rails.cache.delete("fighters:index:all")
+    Rails.cache.delete("fighters:index:json:all")
+    Rails.logger.info "Fighters cache cleared"
   end
 end
