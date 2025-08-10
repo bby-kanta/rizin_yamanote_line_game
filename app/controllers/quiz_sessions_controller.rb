@@ -91,6 +91,9 @@ class QuizSessionsController < ApplicationController
     
     case result
     when :correct
+      # 正解をブロードキャスト
+      broadcast_participant_answered(current_user.id, 'correct')
+      
       if @quiz_session.remaining_participants.empty?
         @quiz_session.end_with_winner!(current_user)
         message = '正解です！あなたの勝利です！'
@@ -99,6 +102,8 @@ class QuizSessionsController < ApplicationController
         message = '正解です！他の参加者を待っています...'
       end
     when :incorrect
+      # 不正解をブロードキャスト
+      broadcast_participant_answered(current_user.id, 'incorrect')
       message = '不正解です。次のヒントを待ちましょう。'
     when :already_responded_this_hint
       message = '既にこのヒントで回答済みです。'
@@ -136,6 +141,8 @@ class QuizSessionsController < ApplicationController
     
     case result
     when :passed
+      # パスをブロードキャスト
+      broadcast_participant_answered(current_user.id, 'passed')
       message = 'パスしました。'
     when :already_responded_this_hint
       message = '既にこのヒントで回答済みです。'
@@ -186,6 +193,14 @@ class QuizSessionsController < ApplicationController
       type: 'game_ended',
       winner: @quiz_session.winner_user&.name,
       results: render_to_string(partial: 'results', locals: { quiz_session: @quiz_session }, formats: [:html])
+    })
+  end
+
+  def broadcast_participant_answered(user_id, status)
+    ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
+      type: 'participant_answered',
+      user_id: user_id,
+      status: status
     })
   end
 end

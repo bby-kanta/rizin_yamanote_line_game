@@ -129,7 +129,7 @@
         <div class="card-body">
           <ul class="list-group">
             <% @participants.each do |participant| %>
-              <li class="list-group-item d-flex justify-content-between align-items-center">
+              <li class="list-group-item d-flex justify-content-between align-items-center" data-user-id="<%= participant.user_id %>">
                 <div>
                   <%= participant.user.name %>
                   <% if participant.is_winner %>
@@ -138,17 +138,17 @@
                 </div>
                 <div>
                   <% if participant.answered? %>
-                    <span class="badge bg-success">正解</span>
+                    <span class="badge bg-success participant-status">正解</span>
                   <% elsif @quiz_session.started? %>
                     <% current_hint_answer = @current_hint_answers&.dig(participant.user_id) %>
                     <% if current_hint_answer %>
                       <% if current_hint_answer.passed? %>
-                        <span class="badge bg-secondary">パス</span>
+                        <span class="badge bg-secondary participant-status">パス</span>
                       <% else %>
-                        <span class="badge bg-warning">不正解</span>
+                        <span class="badge bg-warning participant-status">不正解</span>
                       <% end %>
                     <% else %>
-                      <span class="badge bg-secondary">考え中...</span>
+                      <span class="badge bg-secondary participant-status">考え中...</span>
                     <% end %>
                   <% end %>
                   <% if @quiz_session.ended? %>
@@ -296,11 +296,83 @@ function initializeQuizAutocomplete() {
   }
 }
 
+// ActionCableによるリアルタイム更新
+function setupQuizSubscription() {
+  const quizSessionId = <%= @quiz_session.id %>;
+  
+  console.log('Setting up ActionCable subscription for quiz session:', quizSessionId);
+  
+  App.cable.subscriptions.create({
+    channel: "QuizSessionChannel",
+    quiz_session_id: quizSessionId
+  }, {
+    connected() {
+      console.log("Connected to QuizSessionChannel");
+    },
+    
+    disconnected() {
+      console.log("Disconnected from QuizSessionChannel");
+    },
+    
+    received(data) {
+      console.log("Received data:", data);
+      
+      switch(data.type) {
+        case 'participant_answered':
+          // 参加者が回答した時の処理
+          updateParticipantStatus(data.user_id, data.status);
+          break;
+        case 'next_hint':
+          // 次のヒントに進んだ時
+          window.location.reload();
+          break;
+        case 'game_ended':
+          // ゲーム終了時
+          window.location.reload();
+          break;
+        case 'session_started':
+          // セッション開始時
+          window.location.reload();
+          break;
+      }
+    }
+  });
+}
+
+function updateParticipantStatus(userId, status) {
+  // 参加者リストの状態を更新
+  const participantElements = document.querySelectorAll('[data-user-id="' + userId + '"]');
+  participantElements.forEach(element => {
+    const statusBadge = element.querySelector('.participant-status');
+    if (statusBadge) {
+      statusBadge.className = 'badge participant-status';
+      switch(status) {
+        case 'correct':
+          statusBadge.classList.add('bg-success');
+          statusBadge.textContent = '正解';
+          break;
+        case 'incorrect':
+          statusBadge.classList.add('bg-warning');
+          statusBadge.textContent = '不正解';
+          break;
+        case 'passed':
+          statusBadge.classList.add('bg-secondary');
+          statusBadge.textContent = 'パス';
+          break;
+      }
+    }
+  });
+}
+
 // DOMContentLoadedまたは即座に実行
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeQuizAutocomplete);
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeQuizAutocomplete();
+    setupQuizSubscription();
+  });
 } else {
   // DOMは既に読み込まれている
   initializeQuizAutocomplete();
+  setupQuizSubscription();
 }
 </script>
