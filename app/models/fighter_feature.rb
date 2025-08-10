@@ -12,11 +12,11 @@ class FighterFeature < ApplicationRecord
   def level_text
     case level
     when 1
-      '難しい（詳細）'
+      '具体性が高い'
     when 2
       '普通' 
     when 3
-      '簡単'
+      '抽象度が高い'
     end
   end
 
