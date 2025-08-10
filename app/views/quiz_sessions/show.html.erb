@@ -733,10 +733,14 @@
 
           .hint-meta {
             display: flex;
-            justify-content: center;
-            gap: 20px;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
             margin-bottom: 25px;
             flex-wrap: wrap;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
           }
 
           .category-badge {
@@ -1243,7 +1247,7 @@ function initializeQuizAutocomplete() {
             
             item.addEventListener('click', function(e) {
               e.preventDefault();
-              searchInput.value = fighter.full_name_hiragana;
+              searchInput.value = fighter.full_name;
               fighterIdInput.value = fighter.id;
               submitButton.disabled = false;
               submitButton.removeAttribute('disabled');
