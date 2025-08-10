@@ -322,33 +322,30 @@
           
           <div class="used-fighters-grid">
             <% @used_fighters.each_with_index do |used_fighter, index| %>
-              <div class="used-fighter-card" style="animation-delay: <%= index * 0.1 %>s">
-                <div class="fighter-image-section">
-                  <% if used_fighter.fighter.image_url.present? %>
-                    <img src="<%= used_fighter.fighter.image_url %>" 
-                         alt="<%= used_fighter.fighter.display_name %>" 
-                         class="used-fighter-image">
-                  <% else %>
-                    <div class="used-fighter-placeholder">
-                      <div class="placeholder-icon">👤</div>
+              <%= link_to used_fighter.fighter, class: "used-fighter-card-link", style: "animation-delay: #{index * 0.1}s" do %>
+                <div class="used-fighter-card">
+                  <div class="fighter-image-section">
+                    <% if used_fighter.fighter.image_url.present? %>
+                      <img src="<%= used_fighter.fighter.image_url %>" 
+                           alt="<%= used_fighter.fighter.display_name %>" 
+                           class="used-fighter-image">
+                    <% else %>
+                      <div class="used-fighter-placeholder">
+                        <div class="placeholder-icon">👤</div>
+                      </div>
+                    <% end %>
+                    <div class="fighter-overlay">
+                      <div class="order-badge">#<%= index + 1 %></div>
                     </div>
-                  <% end %>
-                  <div class="fighter-overlay">
-                    <div class="order-badge">#<%= index + 1 %></div>
+                  </div>
+                  
+                  <div class="fighter-info-section">
+                    <div class="fighter-name">
+                      <%= used_fighter.fighter.display_name %>
+                    </div>
                   </div>
                 </div>
-                
-                <div class="fighter-info-section">
-                  <div class="fighter-name-link">
-                    <%= link_to used_fighter.fighter.display_name, used_fighter.fighter, 
-                                class: "fighter-link" %>
-                  </div>
-                  <div class="used-by-info">
-                    <span class="used-by-label">Used by:</span>
-                    <span class="user-name"><%= used_fighter.used_by.name %></span>
-                  </div>
-                </div>
-              </div>
+              <% end %>
             <% end %>
           </div>
         </div>
