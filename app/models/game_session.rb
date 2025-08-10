@@ -2,6 +2,7 @@ class GameSession < ApplicationRecord
   # アソシエーション
   belongs_to :creator, class_name: 'User'
   belongs_to :current_turn_player, class_name: 'User', optional: true
+  belongs_to :winner_user, class_name: 'User', optional: true
   has_many :game_players, dependent: :destroy
   has_many :players, through: :game_players, source: :user
   has_many :used_fighters, dependent: :destroy
@@ -70,10 +71,12 @@ class GameSession < ApplicationRecord
         remaining_players = game_players.where(is_eliminated: false)
         
         if remaining_players.count <= 1
-          # ゲーム終了
+          # ゲーム終了 - 勝者を記録
+          winner = remaining_players.first&.user
           update!(
             status: :finished,
             current_turn_player: nil,
+            winner_user: winner,
             ended_at: Time.current
           )
         else
@@ -86,9 +89,7 @@ class GameSession < ApplicationRecord
   
   # 勝者を取得
   def winner
-    return nil unless finished?
-    remaining_players = game_players.where(is_eliminated: false)
-    remaining_players.count == 1 ? remaining_players.first.user : nil
+    winner_user
   end
   
   # 選手が使用済みかチェック

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_10_005624) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_10_011843) do
   create_table "fighter_weight_classes", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.bigint "fighter_id", null: false
     t.bigint "weight_class_id", null: false
@@ -59,9 +59,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_005624) do
     t.datetime "ended_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "winner_user_id"
     t.index ["creator_id"], name: "index_game_sessions_on_creator_id"
     t.index ["current_turn_player_id"], name: "fk_rails_8320569b62"
     t.index ["status"], name: "index_game_sessions_on_status"
+    t.index ["winner_user_id"], name: "index_game_sessions_on_winner_user_id"
   end
 
   create_table "used_fighters", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -105,6 +107,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_005624) do
   add_foreign_key "game_players", "users"
   add_foreign_key "game_sessions", "users", column: "creator_id"
   add_foreign_key "game_sessions", "users", column: "current_turn_player_id"
+  add_foreign_key "game_sessions", "users", column: "winner_user_id"
   add_foreign_key "used_fighters", "fighters"
   add_foreign_key "used_fighters", "game_sessions"
   add_foreign_key "used_fighters", "users", column: "used_by_id"

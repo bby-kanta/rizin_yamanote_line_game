@@ -134,8 +134,27 @@ class GameSessionsController < ApplicationController
     if @game_session.eliminate_player!(target_user)
       if @game_session.finished?
         winner = @game_session.winner
+        
+        # ゲーム終了をブロードキャスト
+        broadcast_game_update(
+          type: 'game_status',
+          status: 'finished',
+          winner: winner&.name,
+          message: "#{target_user.name}さんが脱落しました。#{winner&.name}さんの勝利です！",
+          players: serialize_players
+        )
+        
         redirect_to @game_session, notice: "#{target_user.name}さんが脱落しました。#{winner&.name}さんの勝利です！"
       else
+        # プレイヤー脱落をブロードキャスト
+        broadcast_game_update(
+          type: 'player_action',
+          message: "#{target_user.name}さんが脱落しました",
+          current_player_name: @game_session.current_turn_player.name,
+          current_player_id: @game_session.current_turn_player.id,
+          players: serialize_players
+        )
+        
         redirect_to @game_session, notice: "#{target_user.name}さんが脱落しました。"
       end
     else
