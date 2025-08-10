@@ -254,7 +254,10 @@
                     </div>
                   <% end %>
                   <div class="flex-grow-1">
-                    <div class="fw-bold"><%= used_fighter.fighter.display_name %></div>
+                    <div class="fw-bold">
+                      <%= link_to used_fighter.fighter.display_name, used_fighter.fighter, 
+                                  class: "text-decoration-none" %>
+                    </div>
                     <small class="text-muted">使用者: <%= used_fighter.used_by.name %></small>
                   </div>
                 </div>
