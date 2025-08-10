@@ -1329,6 +1329,10 @@ function initializeQuizAutocomplete() {
   }
 }
 
+// 接続状態を管理
+const connectionStatus = {};
+let subscription = null;
+
 // ActionCableによるリアルタイム更新
 function setupQuizSubscription() {
   if (!window.App || !window.App.cable) {
@@ -1338,25 +1342,58 @@ function setupQuizSubscription() {
   }
   
   const quizSessionId = <%= @quiz_session.id %>;
+  const currentUserId = <%= current_user.id %>;
   
   console.log('Setting up ActionCable subscription for quiz session:', quizSessionId);
   
-  window.App.cable.subscriptions.create({
+  subscription = window.App.cable.subscriptions.create({
     channel: "QuizSessionChannel",
     quiz_session_id: quizSessionId
   }, {
     connected() {
-      console.log("Connected to QuizSessionChannel");
+      console.log("Connected to QuizSessionChannel for session:", quizSessionId);
+      // 接続状態を表示
+      const indicator = document.getElementById('connection-indicator');
+      if (indicator) {
+        indicator.textContent = '🟢';
+        indicator.title = '接続中';
+      }
     },
     
     disconnected() {
       console.log("Disconnected from QuizSessionChannel");
+      // 切断状態を表示
+      const indicator = document.getElementById('connection-indicator');
+      if (indicator) {
+        indicator.textContent = '🔴';
+        indicator.title = '切断';
+      }
+      // 自動再接続を試みる
+      setTimeout(() => {
+        console.log("Attempting to reconnect...");
+        setupQuizSubscription();
+      }, 3000);
     },
     
     received(data) {
-      console.log("Received data:", data);
+      console.log("Received data at", new Date().toISOString(), ":", data);
       
       switch(data.type) {
+        case 'user_connected':
+          // ユーザー接続
+          connectionStatus[data.user_id] = true;
+          updateConnectionStatus(data.user_id, true);
+          break;
+        case 'user_disconnected':
+          // ユーザー切断
+          connectionStatus[data.user_id] = false;
+          updateConnectionStatus(data.user_id, false);
+          break;
+        case 'pong':
+          // ping応答
+          connectionStatus[data.user_id] = true;
+          updateConnectionStatus(data.user_id, true);
+          break;
         case 'participant_answered':
           // 参加者が回答した時の処理
           updateParticipantStatus(data.user_id, data.status);
@@ -1374,7 +1411,28 @@ function setupQuizSubscription() {
           window.location.reload();
           break;
       }
+    },
+    
+    // pingを送信するメソッド
+    ping() {
+      this.perform('ping', { timestamp: Date.now() });
     }
+  });
+}
+
+function updateConnectionStatus(userId, isConnected) {
+  // 参加者リストに接続状態アイコンを表示
+  const participantElements = document.querySelectorAll('[data-user-id="' + userId + '"]');
+  participantElements.forEach(element => {
+    let indicator = element.querySelector('.connection-indicator');
+    if (!indicator) {
+      indicator = document.createElement('span');
+      indicator.className = 'connection-indicator';
+      indicator.style.marginLeft = '5px';
+      element.appendChild(indicator);
+    }
+    indicator.textContent = isConnected ? '🟢' : '🔴';
+    indicator.title = isConnected ? '接続中' : '切断';
   });
 }
 
@@ -1403,15 +1461,26 @@ function updateParticipantStatus(userId, status) {
   });
 }
 
+// 定期的にpingを送信
+function startPingInterval() {
+  setInterval(() => {
+    if (subscription && subscription.ping) {
+      subscription.ping();
+    }
+  }, 5000); // 5秒ごとにping送信
+}
+
 // DOMContentLoadedまたは即座に実行
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     initializeQuizAutocomplete();
     setupQuizSubscription();
+    startPingInterval();
   });
 } else {
   // DOMは既に読み込まれている
   initializeQuizAutocomplete();
   setupQuizSubscription();
+  startPingInterval();
 }
 </script>

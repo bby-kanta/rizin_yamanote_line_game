@@ -97,7 +97,11 @@ class QuizSessionsController < ApplicationController
       if @quiz_session.remaining_participants.empty?
         @quiz_session.end_with_winner!(current_user)
         message = '正解です！あなたの勝利です！'
-        broadcast_game_ended
+        # 少し遅延を入れてからブロードキャスト（DBの更新が完了するのを待つ）
+        Thread.new do
+          sleep 0.5
+          broadcast_game_ended
+        end
       else
         message = '正解です！他の参加者を待っています...'
       end
@@ -189,11 +193,13 @@ class QuizSessionsController < ApplicationController
   end
 
   def broadcast_game_ended
+    Rails.logger.info "Broadcasting game_ended for quiz_session_#{@quiz_session.id}"
     ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
       type: 'game_ended',
       winner: @quiz_session.winner_user&.name,
       results: render_to_string(partial: 'results', locals: { quiz_session: @quiz_session }, formats: [:html])
     })
+    Rails.logger.info "Broadcast completed for quiz_session_#{@quiz_session.id}"
   end
 
   def broadcast_participant_answered(user_id, status)
