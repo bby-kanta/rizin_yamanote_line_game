@@ -28,6 +28,6 @@ module App
     config.autoload_paths << Rails.root.join("app", "services")
 
     # render.comのホストを許可
-    config.hosts << 'xxx.onrender.com'
+    config.hosts << 'rizin-yamanote-line-game.onrender.com'
   end
 end
