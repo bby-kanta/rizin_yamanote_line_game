@@ -128,7 +128,7 @@ class QuizSessionsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to @quiz_session, notice: message }
-      format.json { render json: { status: 'success', message: message } }
+      format.json { render json: { status: 'success', message: message, redirect: false } }
     end
   end
 
@@ -167,7 +167,7 @@ class QuizSessionsController < ApplicationController
 
     respond_to do |format|
       format.html { redirect_to @quiz_session, notice: message }
-      format.json { render json: { status: 'success', message: message } }
+      format.json { render json: { status: 'success', message: message, redirect: false } }
     end
   end
 

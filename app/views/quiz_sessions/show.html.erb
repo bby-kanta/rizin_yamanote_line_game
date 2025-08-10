@@ -130,10 +130,10 @@
                 
                 <!-- パスボタン -->
                 <div class="pass-section">
-                  <%= button_to pass_quiz_session_path(@quiz_session), method: :patch, class: "pass-btn", data: { turbo: false } do %>
+                  <button type="button" class="pass-btn" id="pass-btn">
                     <span class="pass-icon">⏭️</span>
-                    <span class="pass-text">PASS THIS HINT</span>
-                  <% end %>
+                    <span class="btn-text pass-text">PASS THIS HINT</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1218,9 +1218,101 @@
               font-size: 1.4rem;
             }
           }
+          
+          /* ローディング状態のボタンスタイル */
+          .loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.8;
+          }
+          
+          .loading .btn-text {
+            opacity: 0;
+          }
+          
+          .loading .btn-icon,
+          .loading .pass-icon {
+            opacity: 0;
+          }
+          
+          .loading-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            color: white;
+          }
+          
+          .loading-dots {
+            display: inline-block;
+          }
+          
+          .loading-dots span {
+            animation: dot-flashing 1.4s infinite linear alternate;
+            animation-delay: calc(var(--delay) * 0.2s);
+          }
+          
+          @keyframes dot-flashing {
+            0% {
+              opacity: 0.2;
+            }
+            50%, 100% {
+              opacity: 1;
+            }
+          }
         </style>
 
 <script>
+// グローバル変数でボタンを保持
+let currentSubmitButton = null;
+let currentPassButton = null;
+
+// ローディング状態の制御関数（グローバル）
+function setButtonLoading(button, message) {
+  button.classList.add('loading');
+  button.disabled = true;
+  
+  // ローディングテキストを追加（ドット部分は分離）
+  const loadingText = document.createElement('div');
+  loadingText.className = 'loading-text';
+  
+  // テキストを「他の人を待機中」と「...」に分割
+  const textPart = message.replace('...', '');
+  const dotsHtml = `
+    <span class="loading-dots">
+      <span style="--delay: 0">.</span>
+      <span style="--delay: 1">.</span>
+      <span style="--delay: 2">.</span>
+    </span>
+  `;
+  
+  loadingText.innerHTML = textPart + dotsHtml;
+  button.appendChild(loadingText);
+}
+
+function removeButtonLoading(button) {
+  if (!button) return;
+  button.classList.remove('loading');
+  button.disabled = false;
+  
+  // ローディングテキストを削除
+  const loadingText = button.querySelector('.loading-text');
+  if (loadingText) loadingText.remove();
+}
+
+// 全てのボタンのローディング状態を解除
+function clearAllButtonLoading() {
+  if (currentSubmitButton) {
+    removeButtonLoading(currentSubmitButton);
+  }
+  if (currentPassButton) {
+    removeButtonLoading(currentPassButton);
+  }
+}
+
 function initializeQuizAutocomplete() {
   console.log('DOMContentLoaded fired');
   
@@ -1228,6 +1320,9 @@ function initializeQuizAutocomplete() {
   const suggestionsDiv = document.getElementById('fighter-suggestions');
   const fighterIdInput = document.getElementById('fighter-id');
   const submitButton = document.getElementById('submit-answer');
+  
+  // グローバル変数に設定
+  currentSubmitButton = submitButton;
   
   console.log('Elements found:', {
     searchInput: !!searchInput,
@@ -1297,6 +1392,9 @@ function initializeQuizAutocomplete() {
       
       console.log('Submitting via fetch...');
       
+      // ローディング状態にする
+      setButtonLoading(submitButton, '他の人を待機中...');
+      
       // fetchでPOSTリクエストを送信
       const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
       const formData = new FormData();
@@ -1318,14 +1416,90 @@ function initializeQuizAutocomplete() {
         }
       }).then(data => {
         console.log('Success:', data);
-        window.location.reload();
+        // AJAXレスポンスの場合はリロードしない
+        if (data.redirect !== false) {
+          window.location.reload();
+        }
+        // メッセージを表示
+        if (data.message) {
+          showMessage(data.message);
+        }
+        // ローディング状態は次のヒント/結果まで維持
       }).catch(error => {
         console.error('Error:', error);
+        // エラー時のみローディング状態を解除
+        removeButtonLoading(submitButton);
         alert('エラーが発生しました。');
       });
     });
+    
+    // パスボタンのAJAX処理
+    const passBtn = document.getElementById('pass-btn');
+    currentPassButton = passBtn; // グローバル変数に設定
+    if (passBtn) {
+      passBtn.addEventListener('click', function() {
+        // ローディング状態にする
+        setButtonLoading(passBtn, '他の人を待機中...');
+        
+        const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        fetch('<%= pass_quiz_session_path(@quiz_session) %>', {
+          method: 'PATCH',
+          headers: {
+            'X-CSRF-Token': token,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        }).then(response => {
+          if (response.ok) {
+            return response.json();
+          } else {
+            throw new Error('Request failed');
+          }
+        }).then(data => {
+          console.log('Pass Success:', data);
+          // AJAXレスポンスの場合はリロードしない
+          if (data.redirect !== false) {
+            window.location.reload();
+          }
+          // メッセージを表示
+          if (data.message) {
+            showMessage(data.message);
+          }
+          // ローディング状態は次のヒント/結果まで維持
+        }).catch(error => {
+          console.error('Pass Error:', error);
+          // エラー時のみローディング状態を解除
+          removeButtonLoading(passBtn);
+          alert('パス処理でエラーが発生しました。');
+        });
+      });
+    }
   } else {
     console.log('Some elements not found');
+  }
+
+  // メッセージ表示機能
+  function showMessage(message) {
+    // 既存の通知を削除
+    const existingNotice = document.querySelector('.ajax-notice');
+    if (existingNotice) {
+      existingNotice.remove();
+    }
+    
+    // 新しい通知を作成
+    const notice = document.createElement('div');
+    notice.className = 'ajax-notice';
+    notice.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; z-index: 1000; max-width: 300px;';
+    notice.textContent = message;
+    
+    document.body.appendChild(notice);
+    
+    // 3秒後に自動削除
+    setTimeout(() => {
+      notice.remove();
+    }, 3000);
   }
 }
 
@@ -1362,15 +1536,18 @@ function setupQuizSubscription() {
           updateParticipantStatus(data.user_id, data.status);
           break;
         case 'next_hint':
-          // 次のヒントに進んだ時
+          // 次のヒントに進んだ時 - ローディング解除してからリロード
+          clearAllButtonLoading();
           window.location.reload();
           break;
         case 'game_ended':
-          // ゲーム終了時
+          // ゲーム終了時 - ローディング解除してからリロード
+          clearAllButtonLoading();
           window.location.reload();
           break;
         case 'session_started':
-          // セッション開始時
+          // セッション開始時 - ローディング解除してからリロード
+          clearAllButtonLoading();
           window.location.reload();
           break;
       }
