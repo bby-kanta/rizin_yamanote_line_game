@@ -9,13 +9,13 @@ class FightersController < ApplicationController
     query = params[:query] || params[:q]
     
     if query.present?
-      @fighters = Fighter.active.search_by_hiragana(query).limit(10)
+      @fighters = Fighter.active.search_by_hiragana(query)
       @query = query
       
       # 候補が1件に絞り込まれた場合のフラグ
       @single_candidate = @fighters.count == 1 ? @fighters.first : nil
     else
-      @fighters = Fighter.active.limit(20)
+      @fighters = Fighter.active.order(:full_name)
     end
     
     respond_to do |format|
