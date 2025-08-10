@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#f5e6d3" rx="50"/>
+  
+  <!-- Black frame -->
+  <rect x="40" y="40" width="432" height="432" rx="30" fill="none" stroke="#000" stroke-width="25"/>
+  
+  <!-- Train body -->
+  <path d="M 100 150 L 412 150 Q 430 150 430 170 L 430 350 Q 430 380 400 380 L 112 380 Q 82 380 82 350 L 82 170 Q 82 150 100 150 Z" fill="#b73e3e"/>
+  
+  <!-- Train front window -->
+  <rect x="120" y="180" width="272" height="100" rx="15" fill="#f5e6d3" stroke="#000" stroke-width="12"/>
+  
+  <!-- RIZIN text -->
+  <text x="256" y="245" font-family="Arial Black, sans-serif" font-size="72" font-weight="900" text-anchor="middle" fill="#000">RIZIN</text>
+  
+  <!-- Train headlights -->
+  <ellipse cx="150" cy="340" rx="25" ry="20" fill="#f4c430" stroke="#000" stroke-width="8"/>
+  <ellipse cx="362" cy="340" rx="25" ry="20" fill="#f4c430" stroke="#000" stroke-width="8"/>
+  
+  <!-- Rails -->
+  <rect x="90" y="420" width="332" height="12" fill="#000"/>
+  <rect x="90" y="450" width="332" height="12" fill="#000"/>
+  
+  <!-- Rail ties -->
+  <rect x="130" y="415" width="8" height="52" fill="#000"/>
+  <rect x="190" y="415" width="8" height="52" fill="#000"/>
+  <rect x="250" y="415" width="8" height="52" fill="#000"/>
+  <rect x="310" y="415" width="8" height="52" fill="#000"/>
+  <rect x="370" y="415" width="8" height="52" fill="#000"/>
+</svg>
