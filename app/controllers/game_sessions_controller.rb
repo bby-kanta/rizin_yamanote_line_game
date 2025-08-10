@@ -9,6 +9,12 @@ class GameSessionsController < ApplicationController
     @my_sessions = current_user.joined_game_sessions.active.includes(:creator, :players).order(created_at: :desc)
   end
 
+  def history
+    @finished_sessions = GameSession.finished
+                                    .includes(:creator, :winner_user, :game_players => :user)
+                                    .order(ended_at: :desc)
+  end
+
   def show
     @game_player = @game_session.game_players.find_by(user: current_user)
     @players = @game_session.game_players.includes(:user).order(:turn_order)
