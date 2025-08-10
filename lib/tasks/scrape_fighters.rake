@@ -90,6 +90,10 @@ namespace :fighters do
           h4_element = person.css('h4').first
           next unless h4_element
           
+          # 画像URLを取得
+          img_element = person.css('img').first
+          image_url = img_element ? img_element['src'] : nil
+          
           # h4内のテキストを<br>で分割
           h4_html = h4_element.inner_html
           parts = h4_html.split('<br>')
@@ -101,9 +105,9 @@ namespace :fighters do
             next if japanese_name.empty? || english_name.empty?
             next if japanese_name.match?(/\d/) || english_name.match?(/\d/)
             
-            puts "DEBUG: Person element - Japanese: '#{japanese_name}', English: '#{english_name}'"
+            puts "DEBUG: Person element - Japanese: '#{japanese_name}', English: '#{english_name}', Image: '#{image_url}'"
             
-            process_fighter_data(japanese_name, english_name, fighters_created, errors)
+            process_fighter_data(japanese_name, english_name, image_url, fighters_created, errors)
             fighters_scraped += 1
           end
         end
@@ -119,7 +123,7 @@ namespace :fighters do
           english_name = extract_english_name(element)
           
           if japanese_name && english_name
-            process_fighter_data(japanese_name, english_name, fighters_created, errors)
+            process_fighter_data(japanese_name, english_name, nil, fighters_created, errors)
           else
             errors << "Failed to extract names from element: #{element.to_s[0..100]}"
           end
@@ -193,7 +197,7 @@ namespace :fighters do
     english_match ? english_match[1].strip : nil
   end
 
-  def process_fighter_data(japanese_name, english_name, fighters_created, errors)
+  def process_fighter_data(japanese_name, english_name, image_url, fighters_created, errors)
     begin
       # スクレイピングで取得した値をそのまま保存（絶対に変換しない）
       full_name_value = japanese_name.strip
@@ -227,10 +231,11 @@ namespace :fighters do
         full_name_hiragana: hiragana_name,
         ring_name: nil,
         ring_name_hiragana: nil,
+        image_url: image_url,
         is_active: true
       )
       
-      puts "Created fighter: #{fighter.full_name} (#{fighter.full_name_english}) - #{fighter.full_name_hiragana}"
+      puts "Created fighter: #{fighter.full_name} (#{fighter.full_name_english}) - #{fighter.full_name_hiragana} - Image: #{fighter.image_url}"
       fighters_created += 1
       
     rescue => e
