@@ -1416,8 +1416,8 @@ function initializeQuizAutocomplete() {
         }
       }).then(data => {
         console.log('Success:', data);
-        // AJAXレスポンスの場合はリロードしない
-        if (data.redirect !== false) {
+        // 明示的にリロードが必要な場合のみリロード
+        if (data.redirect === true) {
           window.location.reload();
         }
         // メッセージを表示
