@@ -15,7 +15,7 @@ Rails.application.routes.draw do
     end
   end
   
-  resources :fighters, only: [:index, :show]
+  resources :fighters
   devise_for :users
   
   root "home#index"

@@ -22,4 +22,9 @@ class User < ApplicationRecord
   def joined_game?(game_session)
     game_players.exists?(game_session: game_session)
   end
+  
+  # 管理者権限があるかチェック
+  def admin?
+    is_admin
+  end
 end

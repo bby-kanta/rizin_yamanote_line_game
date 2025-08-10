@@ -1,0 +1,56 @@
+<div class="container">
+  <h1>新しい選手を追加</h1>
+
+  <%= form_with(model: @fighter, local: true, class: "row g-3") do |form| %>
+    <% if @fighter.errors.any? %>
+      <div id="error_explanation" class="alert alert-danger">
+        <h4><%= pluralize(@fighter.errors.count, "個") %>のエラーが発生しました:</h4>
+        <ul>
+          <% @fighter.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <div class="col-md-6">
+      <%= form.label :full_name, "本名", class: "form-label" %>
+      <%= form.text_field :full_name, class: "form-control" %>
+    </div>
+
+    <div class="col-md-6">
+      <%= form.label :full_name_english, "本名（英語）", class: "form-label" %>
+      <%= form.text_field :full_name_english, class: "form-control" %>
+    </div>
+
+    <div class="col-md-6">
+      <%= form.label :full_name_hiragana, "本名（ひらがな）", class: "form-label" %>
+      <%= form.text_field :full_name_hiragana, class: "form-control" %>
+    </div>
+
+    <div class="col-md-6">
+      <%= form.label :ring_name, "リングネーム", class: "form-label" %>
+      <%= form.text_field :ring_name, class: "form-control" %>
+    </div>
+
+    <div class="col-md-6">
+      <%= form.label :ring_name_hiragana, "リングネーム（ひらがな）", class: "form-label" %>
+      <%= form.text_field :ring_name_hiragana, class: "form-control" %>
+    </div>
+
+    <div class="col-md-6">
+      <%= form.label :image_url, "画像URL", class: "form-label" %>
+      <%= form.url_field :image_url, class: "form-control" %>
+    </div>
+
+    <div class="col-12">
+      <%= form.check_box :is_active, checked: true, class: "form-check-input" %>
+      <%= form.label :is_active, "現役", class: "form-check-label ms-2" %>
+    </div>
+
+    <div class="col-12">
+      <%= form.submit "作成", class: "btn btn-success me-2" %>
+      <%= link_to "キャンセル", fighters_path, class: "btn btn-secondary" %>
+    </div>
+  <% end %>
+</div>

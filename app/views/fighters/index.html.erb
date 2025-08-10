@@ -1,4 +1,9 @@
-<h1>選手検索</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>選手検索</h1>
+  <% if user_signed_in? && current_user.admin? %>
+    <%= link_to "新しい選手を追加", new_fighter_path, class: "btn btn-success" %>
+  <% end %>
+</div>
 
 <%= form_with url: fighters_path, method: :get, local: true do |form| %>
   <%= form.text_field :query, value: @query, placeholder: "選手名をひらがなで入力", 
@@ -24,7 +29,12 @@
             <strong>階級:</strong> 
             <%= fighter.weight_classes.map(&:japanese_name).join(", ") %>
           </p>
-          <%= link_to "詳細", fighter_path(fighter), class: "btn btn-outline-primary" %>
+          <div class="d-flex justify-content-between align-items-center">
+            <%= link_to "詳細", fighter_path(fighter), class: "btn btn-outline-primary btn-sm" %>
+            <% if user_signed_in? && current_user.admin? %>
+              <%= link_to "編集", edit_fighter_path(fighter), class: "btn btn-outline-secondary btn-sm ms-2" %>
+            <% end %>
+          </div>
         </div>
       </div>
     </div>

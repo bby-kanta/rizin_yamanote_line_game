@@ -7,7 +7,11 @@ namespace :fighters do
 
     puts "Starting RIZIN fighters scraping with Selenium (Firefox)..."
 
-    url = "https://jp.rizinff.com/fighters/mma"
+    urls = %w[https://jp.rizinff.com/fighters/mma https://jp.rizinff.com/fighters/kick]
+    
+    total_fighters_scraped = 0
+    total_fighters_created = 0
+    total_errors = []
     
     begin
       # 環境変数を設定
@@ -29,27 +33,32 @@ namespace :fighters do
       driver = Selenium::WebDriver.for :firefox, options: options
       puts "Firefox browser started successfully"
       
-      driver.get(url)
-      puts "Page loaded, waiting for JavaScript to render..."
-      
-      # JavaScript実行完了を待機
-      wait = Selenium::WebDriver::Wait.new(timeout: 30)
-      wait.until { driver.execute_script("return document.readyState") == "complete" }
-      
-      # 追加で選手データが読み込まれるまで待機
-      sleep 10
-      puts "JavaScript rendering completed"
-      
-      # ページソースを取得してNokogiriで解析
-      doc = Nokogiri::HTML(driver.page_source)
-      
-      # デバッグ情報を出力
-      puts "\nPage title: #{doc.title}"
-      puts "Total elements: #{doc.css('*').length}"
-      puts "Links count: #{doc.css('a').length}"
-      fighters_scraped = 0
-      fighters_created = 0
-      errors = []
+      urls.each do |url|
+        puts "\n" + "="*60
+        puts "Scraping: #{url}"
+        puts "="*60
+        
+        driver.get(url)
+        puts "Page loaded, waiting for JavaScript to render..."
+        
+        # JavaScript実行完了を待機
+        wait = Selenium::WebDriver::Wait.new(timeout: 30)
+        wait.until { driver.execute_script("return document.readyState") == "complete" }
+        
+        # 追加で選手データが読み込まれるまで待機
+        sleep 10
+        puts "JavaScript rendering completed"
+        
+        # ページソースを取得してNokogiriで解析
+        doc = Nokogiri::HTML(driver.page_source)
+        
+        # デバッグ情報を出力
+        puts "\nPage title: #{doc.title}"
+        puts "Total elements: #{doc.css('*').length}"
+        puts "Links count: #{doc.css('a').length}"
+        fighters_scraped = 0
+        fighters_created = 0
+        errors = []
 
       # 選手データを探す（複数のパターンを試行）
       fighter_selectors = [
@@ -107,7 +116,7 @@ namespace :fighters do
             
             puts "DEBUG: Person element - Japanese: '#{japanese_name}', English: '#{english_name}', Image: '#{image_url}'"
             
-            process_fighter_data(japanese_name, english_name, image_url, fighters_created, errors)
+            fighters_created = process_fighter_data(japanese_name, english_name, image_url, fighters_created, errors)
             fighters_scraped += 1
           end
         end
@@ -123,23 +132,35 @@ namespace :fighters do
           english_name = extract_english_name(element)
           
           if japanese_name && english_name
-            process_fighter_data(japanese_name, english_name, nil, fighters_created, errors)
+            fighters_created = process_fighter_data(japanese_name, english_name, nil, fighters_created, errors)
           else
             errors << "Failed to extract names from element: #{element.to_s[0..100]}"
           end
         end
       end
 
-      puts "\nScraping completed!"
-      puts "Elements processed: #{fighters_scraped}"
-      puts "Fighters created: #{fighters_created}"
-      puts "Errors: #{errors.length}"
-      
-      if errors.any?
-        puts "\nErrors encountered:"
-        errors.first(10).each { |error| puts "- #{error}" }
-        puts "... and #{errors.length - 10} more errors" if errors.length > 10
+        puts "\nScraping completed for #{url}!"
+        puts "Elements processed: #{fighters_scraped}"
+        puts "Fighters created: #{fighters_created}"
+        puts "Errors: #{errors.length}"
+        
+        if errors.any?
+          puts "\nErrors encountered:"
+          errors.first(10).each { |error| puts "- #{error}" }
+          puts "... and #{errors.length - 10} more errors" if errors.length > 10
+        end
+        
+        total_fighters_scraped += fighters_scraped
+        total_fighters_created += fighters_created
+        total_errors += errors
       end
+      
+      puts "\n" + "="*60
+      puts "FINAL SUMMARY"
+      puts "="*60
+      puts "Total elements processed: #{total_fighters_scraped}"
+      puts "Total fighters created: #{total_fighters_created}"
+      puts "Total errors: #{total_errors.length}"
 
     rescue => e
       puts "Error occurred during scraping: #{e.message}"
@@ -221,7 +242,7 @@ namespace :fighters do
       
       if existing_fighter
         puts "Skipping existing fighter: #{full_name_value} (#{full_name_english_value})"
-        return
+        return fighters_created
       end
 
       # 新しい選手を作成（スクレイピング値をそのまま保存）
@@ -236,12 +257,13 @@ namespace :fighters do
       )
       
       puts "Created fighter: #{fighter.full_name} (#{fighter.full_name_english}) - #{fighter.full_name_hiragana} - Image: #{fighter.image_url}"
-      fighters_created += 1
+      return fighters_created + 1
       
     rescue => e
       error_msg = "Failed to create fighter '#{japanese_name}' (#{english_name}): #{e.message}"
       errors << error_msg
       puts error_msg
+      return fighters_created
     end
   end
 
