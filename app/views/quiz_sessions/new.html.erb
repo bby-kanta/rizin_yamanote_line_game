@@ -34,8 +34,8 @@
               <div class="mb-3">
                 <%= f.label :target_fighter_id, "対象選手", class: "form-label" %>
                 <%= f.select :target_fighter_id, 
-                    options_for_select([["ランダムに選択", ""]] + @eligible_fighters.map { |f| [f.display_name + " (特徴数: #{f.fighter_features.count})", f.id] }), 
-                    { prompt: "選手を選択してください" }, 
+                    options_for_select([["ランダムに選択", ""]] + @eligible_fighters.map { |f| [f.display_name + " (特徴数: #{f.fighter_features.count})", f.id] }, ""), 
+                    {}, 
                     class: "form-select form-select-lg",
                     required: true %>
                 <div class="form-text">
