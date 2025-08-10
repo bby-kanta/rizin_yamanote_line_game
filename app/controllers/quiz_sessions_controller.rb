@@ -91,14 +91,16 @@ class QuizSessionsController < ApplicationController
     
     case result
     when :correct
-      # 正解をブロードキャスト
-      broadcast_participant_answered(current_user.id, 'correct')
-      
       if @quiz_session.remaining_participants.empty?
+        # 最後の正解者の場合は、ゲーム終了処理を先に行う
         @quiz_session.end_with_winner!(current_user)
-        message = '正解です！あなたの勝利です！'
+        # 正解とゲーム終了を同時にブロードキャスト
+        broadcast_participant_answered(current_user.id, 'correct')
         broadcast_game_ended
+        message = '正解です！あなたの勝利です！'
       else
+        # まだ他の参加者が残っている場合
+        broadcast_participant_answered(current_user.id, 'correct')
         message = '正解です！他の参加者を待っています...'
       end
     when :incorrect

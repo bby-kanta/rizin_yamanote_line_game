@@ -1367,7 +1367,11 @@ function setupQuizSubscription() {
           break;
         case 'game_ended':
           // ゲーム終了時
-          window.location.reload();
+          console.log('Game ended. Winner:', data.winner);
+          // 少し遅延を入れてからリロード（正解の表示を確実にするため）
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
           break;
         case 'session_started':
           // セッション開始時
