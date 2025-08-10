@@ -348,6 +348,24 @@ p {
   border-left: 3px solid var(--primary-color);
 }
 
+/* Fighter Thumbnails */
+.fighter-thumbnail {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--border-color);
+  background-color: white;
+}
+
+.fighter-thumbnail-placeholder {
+  width: 60px;
+  height: 60px;
+  background-color: var(--background-color);
+  border-radius: var(--border-radius);
+  border: 2px solid var(--border-color);
+}
+
 /* Spacing */
 .mb-4 {
   margin-bottom: 2rem !important;

@@ -241,10 +241,22 @@
           <h5 class="card-title">使用済み選手 (<%= @used_fighters.count %>人)</h5>
           <div class="row">
             <% @used_fighters.each do |used_fighter| %>
-              <div class="col-md-6 mb-2">
-                <div class="used-fighter-item d-flex justify-content-between">
-                  <span class="fw-bold"><%= used_fighter.fighter.display_name %></span>
-                  <small class="text-muted"><%= used_fighter.used_by.name %></small>
+              <div class="col-md-6 mb-3">
+                <div class="used-fighter-item d-flex align-items-center">
+                  <% if used_fighter.fighter.image_url.present? %>
+                    <%= image_tag used_fighter.fighter.image_url, 
+                                  class: "fighter-thumbnail me-2",
+                                  alt: used_fighter.fighter.display_name,
+                                  loading: "lazy" %>
+                  <% else %>
+                    <div class="fighter-thumbnail-placeholder me-2 d-flex align-items-center justify-content-center">
+                      <i class="fas fa-user text-muted"></i>
+                    </div>
+                  <% end %>
+                  <div class="flex-grow-1">
+                    <div class="fw-bold"><%= used_fighter.fighter.display_name %></div>
+                    <small class="text-muted">使用者: <%= used_fighter.used_by.name %></small>
+                  </div>
                 </div>
               </div>
             <% end %>
