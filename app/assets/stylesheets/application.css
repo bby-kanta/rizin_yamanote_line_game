@@ -76,23 +76,29 @@ p {
 
 /* Hero Section */
 .hero-section {
-  background: linear-gradient(135deg, var(--primary-color) 0%, #1557b0 100%);
+  background: linear-gradient(45deg, #ff6b6b, #feca57) !important;
   padding: 80px 0;
   margin-bottom: 60px;
   border-radius: 0 0 24px 24px;
 }
 
-.hero-section h1 {
-  color: white;
-  font-size: 3rem;
-  font-weight: 700;
+.hero-section h1,
+.hero-section .display-4 {
+  color: white !important;
+  font-size: 3rem !important;
+  font-weight: 700 !important;
   margin-bottom: 1.5rem;
 }
 
 .hero-section .lead {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.9) !important;
   font-size: 1.25rem;
   font-weight: 300;
+}
+
+.hero-section .text-white,
+.hero-section .text-white * {
+  color: white !important;
 }
 
 /* Cards */
@@ -305,25 +311,25 @@ p {
 }
 
 /* Navigation */
-.navbar {
-  background: white !important;
+.navbar.bg-dark {
+  background-color: #343a40 !important;
   box-shadow: var(--shadow-light);
   padding: 1rem 0;
 }
 
-.navbar-brand {
+.navbar-dark .navbar-brand {
   font-weight: 700;
   font-size: 1.5rem;
-  color: var(--primary-color) !important;
+  color: white !important;
 }
 
-.nav-link {
-  color: var(--text-secondary) !important;
+.navbar-dark .nav-link {
+  color: rgba(255, 255, 255, 0.75) !important;
   font-weight: 500;
 }
 
-.nav-link:hover {
-  color: var(--primary-color) !important;
+.navbar-dark .nav-link:hover {
+  color: white !important;
 }
 
 /* Game Specific Styles */
