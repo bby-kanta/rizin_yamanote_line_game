@@ -149,183 +149,300 @@
   }
 </script>
 
-<div class="row">
-  <!-- ゲーム状態表示 -->
-  <div class="col-md-8">
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">
-          ゲーム状態: 
-          <span class="badge <%= case @game_session.status
-                                 when 'waiting' then 'bg-warning'
-                                 when 'playing' then 'bg-success'  
-                                 when 'finished' then 'bg-secondary'
-                                 end %>">
+<div class="container-fluid px-0">
+  <!-- ゲームヘッダー -->
+  <div class="game-header-container mb-4">
+    <div class="game-main-header">
+      <div class="header-content">
+        <h1 class="game-title">
+          <span class="title-icon">🚃</span>
+          <%= @game_session.name %>
+        </h1>
+        <div class="game-status-badge">
+          <span class="badge-text <%= @game_session.status %>">
             <%= case @game_session.status
-                when 'waiting' then '待機中'
-                when 'playing' then 'プレイ中'
-                when 'finished' then '終了'
+                when 'waiting' then '⏳ WAITING'
+                when 'playing' then '🎮 PLAYING'
+                when 'finished' then '🏁 FINISHED'
                 end %>
           </span>
-        </h5>
-        
-        <% if @game_session.playing? %>
-          <p class="mb-2">
-            <strong>現在のターン:</strong> 
-            <span class="text-primary"><%= @game_session.current_turn_player.name %>さん</span>
-          </p>
-        <% end %>
-        
-        <% if @game_session.finished? && @game_session.winner %>
-          <div class="alert alert-success">
-            <h4>🎉 勝者: <%= @game_session.winner.name %>さん</h4>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <!-- 選手検索・選択 -->
-    <% if @game_session.playing? && @game_session.current_turn_player == current_user %>
-      <div class="card mb-3">
-        <div class="card-body">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h5 class="card-title mb-0">あなたのターンです - 選手を選択してください</h5>
-            <%= button_to "リタイア", retire_game_session_path(@game_session), 
-                          method: :patch, class: "btn btn-outline-danger btn-sm",
-                          confirm: "リタイアしますか？ゲームから脱落します。" %>
-          </div>
-          
-          <%= form_with url: game_session_path(@game_session), method: :get, local: true do |form| %>
-            <%= form.text_field :query, value: params[:query], placeholder: "選手名をひらがなで入力", 
-                                class: "form-control mb-2", id: "fighter-search" %>
-            <%= form.submit "検索", class: "btn btn-outline-primary btn-sm" %>
-          <% end %>
-
-          <% if @single_candidate %>
-            <div class="alert alert-info mt-3">
-              <strong>候補が1件に絞り込まれました:</strong>
-              <%= form_with url: submit_fighter_game_session_path(@game_session), method: :post, local: true do |form| %>
-                <%= form.hidden_field :fighter_id, value: @single_candidate.id %>
-                <div class="d-flex align-items-center">
-                  <span class="me-3"><%= @single_candidate.display_name %> (<%= @single_candidate.full_name_hiragana %>)</span>
-                  <%= form.submit "この選手を選択", class: "btn btn-success btn-sm" %>
-                </div>
-              <% end %>
-            </div>
-          <% end %>
-
-          <% if params[:query].present? && @search_results&.any? && !@single_candidate %>
-            <div class="alert alert-warning mt-3">
-              <strong>複数の選手が見つかりました！</strong><br>
-              一人に絞れるまでひらがなを入力してください。
-            </div>
-          <% end %>
-          
-          <% if params[:query].present? && @search_results&.empty? %>
-            <div class="alert alert-info mt-3">
-              「<%= params[:query] %>」に一致する選手が見つかりませんでした。
-            </div>
-          <% end %>
         </div>
       </div>
-    <% elsif @game_session.playing? %>
-      <div class="alert alert-info">
-        <%= @game_session.current_turn_player.name %>さんのターンです。お待ちください。
-      </div>
-    <% end %>
+    </div>
+  </div>
 
-    <!-- 使用済み選手一覧 -->
-    <% if @used_fighters.any? %>
-      <div class="card">
-        <div class="card-body">
-          <h5 class="card-title">使用済み選手 (<%= @used_fighters.count %>人)</h5>
-          <div class="row">
-            <% @used_fighters.each do |used_fighter| %>
-              <div class="col-md-6 mb-3">
-                <div class="used-fighter-item d-flex align-items-center">
+  <div class="row">
+    <!-- メインゲーム画面 -->
+    <div class="col-lg-8 mb-4">
+
+      <!-- 現在のターン表示とアクション -->
+      <% if @game_session.playing? && @game_session.current_turn_player == current_user %>
+        <div class="your-turn-container mb-4">
+          <div class="your-turn-card">
+            <div class="turn-header">
+              <div class="turn-icon">🎯</div>
+              <h2 class="turn-title">YOUR TURN!</h2>
+              <div class="retire-section">
+                <%= button_to retire_game_session_path(@game_session), method: :patch, 
+                              class: "retire-btn", confirm: "リタイアしますか？ゲームから脱落します。" do %>
+                  <span class="retire-icon">🏃</span>
+                  <span class="retire-text">RETIRE</span>
+                <% end %>
+              </div>
+            </div>
+            
+            <div class="turn-body">
+              <div class="fighter-search-section">
+                <div class="search-label-container">
+                  <label class="search-label">
+                    <span class="search-icon">🔍</span>
+                    Fighter Name (Hiragana)
+                  </label>
+                </div>
+                
+                <%= form_with url: game_session_path(@game_session), method: :get, local: true do |form| %>
+                  <div class="search-input-wrapper">
+                    <%= form.text_field :query, value: params[:query], 
+                                        placeholder: "ひらがなで入力してください...", 
+                                        class: "game-search-input", id: "fighter-search" %>
+                    <div class="search-decoration">
+                      <div class="search-glow"></div>
+                    </div>
+                  </div>
+                  
+                  <div class="search-actions">
+                    <%= form.submit "SEARCH", class: "search-btn" %>
+                  </div>
+                <% end %>
+                
+                <% if @single_candidate %>
+                  <div class="candidate-result-section">
+                    <div class="candidate-card">
+                      <div class="candidate-header">
+                        <div class="candidate-icon">🎉</div>
+                        <h3 class="candidate-title">FIGHTER FOUND!</h3>
+                      </div>
+                      <div class="candidate-body">
+                        <div class="candidate-fighter-info">
+                          <div class="candidate-fighter-image">
+                            <% if @single_candidate.image_url.present? %>
+                              <img src="<%= @single_candidate.image_url %>" 
+                                   alt="<%= @single_candidate.display_name %>" 
+                                   class="candidate-image">
+                            <% else %>
+                              <div class="candidate-placeholder">
+                                <div class="placeholder-icon">👤</div>
+                              </div>
+                            <% end %>
+                          </div>
+                          <div class="fighter-info">
+                            <div class="fighter-name"><%= @single_candidate.display_name %></div>
+                            <div class="fighter-hiragana">(<%= @single_candidate.full_name_hiragana %>)</div>
+                          </div>
+                        </div>
+                        <%= form_with url: submit_fighter_game_session_path(@game_session), method: :post, local: true do |form| %>
+                          <%= form.hidden_field :fighter_id, value: @single_candidate.id %>
+                          <%= form.submit "SELECT THIS FIGHTER", class: "select-fighter-btn" %>
+                        <% end %>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+                
+                <% if params[:query].present? && @search_results&.any? && !@single_candidate %>
+                  <div class="search-status multiple-results">
+                    <div class="status-icon">⚠️</div>
+                    <div class="status-text">
+                      <strong>Multiple fighters found!</strong><br>
+                      Please narrow down by typing more hiragana.
+                    </div>
+                  </div>
+                <% end %>
+                
+                <% if params[:query].present? && @search_results&.empty? %>
+                  <div class="search-status no-results">
+                    <div class="status-icon">❌</div>
+                    <div class="status-text">
+                      No fighter found for "<%= params[:query] %>"
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% elsif @game_session.playing? %>
+        <div class="waiting-turn-container mb-4">
+          <div class="waiting-turn-card">
+            <div class="waiting-header">
+              <div class="waiting-icon">⏳</div>
+              <h3 class="waiting-title">WAITING</h3>
+            </div>
+            <div class="waiting-body">
+              <div class="current-player-name"><%= @game_session.current_turn_player.name %></div>
+              <div class="waiting-text">is choosing a fighter...</div>
+              <div class="waiting-animation">
+                <div class="loading-dots">
+                  <span>.</span><span>.</span><span>.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% elsif @game_session.finished? && @game_session.winner %>
+        <div class="game-finished-container mb-4">
+          <div class="finished-card">
+            <div class="finished-header">
+              <div class="winner-crown">👑</div>
+              <h2 class="finished-title">GAME OVER!</h2>
+            </div>
+            <div class="finished-body">
+              <div class="winner-announcement">
+                <div class="winner-label">CHAMPION</div>
+                <div class="winner-name"><%= @game_session.winner.name %></div>
+                <div class="celebration-effects">
+                  <div class="sparkle">✨</div>
+                  <div class="sparkle">🎊</div>
+                  <div class="sparkle">⭐</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% end %>
+
+      <!-- 使用済み選手一覧 -->
+      <% if @used_fighters.any? %>
+        <div class="used-fighters-container">
+          <div class="used-fighters-header">
+            <div class="header-icon">📝</div>
+            <h3 class="header-title">USED FIGHTERS</h3>
+            <div class="fighters-count">(<%= @used_fighters.count %>)</div>
+          </div>
+          
+          <div class="used-fighters-grid">
+            <% @used_fighters.each_with_index do |used_fighter, index| %>
+              <div class="used-fighter-card" style="animation-delay: <%= index * 0.1 %>s">
+                <div class="fighter-image-section">
                   <% if used_fighter.fighter.image_url.present? %>
-                    <%= image_tag used_fighter.fighter.image_url, 
-                                  class: "fighter-thumbnail me-2",
-                                  alt: used_fighter.fighter.display_name,
-                                  loading: "lazy" %>
+                    <img src="<%= used_fighter.fighter.image_url %>" 
+                         alt="<%= used_fighter.fighter.display_name %>" 
+                         class="used-fighter-image">
                   <% else %>
-                    <div class="fighter-thumbnail-placeholder me-2 d-flex align-items-center justify-content-center">
-                      <i class="fas fa-user text-muted"></i>
+                    <div class="used-fighter-placeholder">
+                      <div class="placeholder-icon">👤</div>
                     </div>
                   <% end %>
-                  <div class="flex-grow-1">
-                    <div class="fw-bold">
-                      <%= link_to used_fighter.fighter.display_name, used_fighter.fighter, 
-                                  class: "text-decoration-none" %>
-                    </div>
-                    <small class="text-muted">使用者: <%= used_fighter.used_by.name %></small>
+                  <div class="fighter-overlay">
+                    <div class="order-badge">#<%= index + 1 %></div>
+                  </div>
+                </div>
+                
+                <div class="fighter-info-section">
+                  <div class="fighter-name-link">
+                    <%= link_to used_fighter.fighter.display_name, used_fighter.fighter, 
+                                class: "fighter-link" %>
+                  </div>
+                  <div class="used-by-info">
+                    <span class="used-by-label">Used by:</span>
+                    <span class="user-name"><%= used_fighter.used_by.name %></span>
                   </div>
                 </div>
               </div>
             <% end %>
           </div>
         </div>
-      </div>
-    <% end %>
+      <% end %>
   </div>
 
-  <!-- サイドバー - プレイヤー情報・操作 -->
-  <div class="col-md-4">
-    <div class="card mb-3">
-      <div class="card-body">
-        <h5 class="card-title">参加者 (<%= @players.count %>人)</h5>
-        <% @players.each do |game_player| %>
-          <div class="player-card d-flex justify-content-between align-items-center mb-2 p-3 rounded
-                      <%= 'current-turn' if game_player.current_turn? %>">
-            <div>
-              <span class="<%= 'fw-bold text-primary' if game_player.current_turn? %>">
-                <%= game_player.turn_order %>. <%= game_player.user.name %>
-              </span>
-              <% if game_player.is_eliminated %>
-                <span class="badge bg-danger ms-1">脱落</span>
-              <% elsif game_player.current_turn? %>
-                <span class="badge bg-success ms-1">ターン中</span>
+    <!-- サイドバー - プレイヤー情報・操作 -->
+    <div class="col-lg-4">
+      <!-- プレイヤーリスト -->
+      <div class="players-container mb-4">
+        <div class="players-header">
+          <div class="players-icon">👥</div>
+          <h3 class="players-title">PLAYERS</h3>
+          <div class="players-count">(<%= @players.count %>)</div>
+        </div>
+        
+        <div class="players-list">
+          <% @players.each_with_index do |game_player, index| %>
+            <div class="player-item <%= 'current-player' if game_player.current_turn? %> <%= 'eliminated' if game_player.is_eliminated %>" 
+                 style="animation-delay: <%= index * 0.1 %>s">
+              <div class="player-info">
+                <div class="player-order">#<%= game_player.turn_order %></div>
+                <div class="player-details">
+                  <div class="player-name"><%= game_player.user.name %></div>
+                  <div class="player-status">
+                    <% if game_player.is_eliminated %>
+                      <span class="status-badge eliminated">💀 ELIMINATED</span>
+                    <% elsif game_player.current_turn? %>
+                      <span class="status-badge active">⚡ ACTIVE</span>
+                    <% else %>
+                      <span class="status-badge waiting">⏳ WAITING</span>
+                    <% end %>
+                  </div>
+                </div>
+              </div>
+              
+              <% if @game_session.creator == current_user && @game_session.playing? && !game_player.is_eliminated %>
+                <div class="player-actions">
+                  <%= form_with url: eliminate_player_game_session_path(@game_session), method: :patch, local: true, class: "eliminate-form" do |form| %>
+                    <%= form.hidden_field :user_id, value: game_player.user.id %>
+                    <%= form.submit "🚫", class: "eliminate-btn", 
+                                    title: "Eliminate #{game_player.user.name}",
+                                    confirm: "#{game_player.user.name}さんを脱落させますか？" %>
+                  <% end %>
+                </div>
               <% end %>
             </div>
-            
-            <% if @game_session.creator == current_user && @game_session.playing? && !game_player.is_eliminated %>
-              <%= form_with url: eliminate_player_game_session_path(@game_session), method: :patch, local: true, class: "d-inline" do |form| %>
-                <%= form.hidden_field :user_id, value: game_player.user.id %>
-                <%= form.submit "脱落", class: "btn btn-outline-danger btn-sm", 
-                                confirm: "#{game_player.user.name}さんを脱落させますか？" %>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- ゲーム操作パネル -->
+      <div class="game-controls-container">
+        <div class="controls-header">
+          <div class="controls-icon">🎮</div>
+          <h3 class="controls-title">GAME CONTROL</h3>
+        </div>
+        
+        <div class="controls-body">
+          <% if @game_session.waiting? %>
+            <% if @game_session.creator == current_user %>
+              <% if @game_session.game_players.count >= 2 %>
+                <%= button_to start_game_game_session_path(@game_session), method: :patch, 
+                              class: "control-btn start-btn", confirm: "ゲームを開始しますか？" do %>
+                  <span class="btn-icon">🚀</span>
+                  <span class="btn-text">START GAME</span>
+                <% end %>
+              <% else %>
+                <div class="status-message waiting">
+                  <div class="message-icon">⚠️</div>
+                  <div class="message-text">Need at least 2 players</div>
+                </div>
+              <% end %>
+              <%= link_to edit_game_session_path(@game_session), class: "control-btn settings-btn" do %>
+                <span class="btn-icon">⚙️</span>
+                <span class="btn-text">SETTINGS</span>
               <% end %>
             <% end %>
-          </div>
-        <% end %>
-      </div>
-    </div>
-
-    <!-- ゲーム操作 -->
-    <div class="card">
-      <div class="card-body">
-        <h5 class="card-title">操作</h5>
-        
-        <% if @game_session.waiting? %>
-          <% if @game_session.creator == current_user %>
-            <% if @game_session.game_players.count >= 2 %>
-              <%= button_to "ゲーム開始", start_game_game_session_path(@game_session), 
-                          method: :patch, class: "btn btn-success w-100 mb-2",
-                          confirm: "ゲームを開始しますか？" %>
-            <% else %>
-              <div class="alert alert-warning">
-                最低2人のプレイヤーが必要です
-              </div>
-            <% end %>
-            <%= link_to "設定変更", edit_game_session_path(@game_session), class: "btn btn-outline-primary w-100 mb-2" %>
           <% end %>
-        <% end %>
 
-        <%= button_to "退出", leave_game_session_path(@game_session), 
-                    method: :delete, class: "btn btn-outline-danger w-100 mb-2",
-                    confirm: @game_session.playing? ? "ゲームから脱落しますか？" : "ゲームから退出しますか？" %>
-        
-        <%= link_to "ゲーム一覧に戻る", game_sessions_path, class: "btn btn-secondary w-100" %>
+          <%= button_to leave_game_session_path(@game_session), method: :delete, 
+                        class: "control-btn leave-btn", 
+                        confirm: @game_session.playing? ? "ゲームから脱落しますか？" : "ゲームから退出しますか？" do %>
+            <span class="btn-icon">🚪</span>
+            <span class="btn-text">LEAVE GAME</span>
+          <% end %>
+          
+          <%= link_to game_sessions_path, class: "control-btn back-btn" do %>
+            <span class="btn-icon">🔙</span>
+            <span class="btn-text">BACK TO LOBBY</span>
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
+</div>
 </div>

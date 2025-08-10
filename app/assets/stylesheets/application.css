@@ -568,3 +568,874 @@ p {
 .hover-lift:hover {
   transform: translateY(-2px);
 }
+
+/* ========== 山手線ゲーム専用スタイル ========== */
+
+/* ゲームヘッダー */
+.game-header-container {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.game-main-header {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  margin: 3px;
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.header-content {
+  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.game-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  margin: 0;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.title-icon {
+  font-size: 2.5rem;
+  animation: bounce 2s infinite;
+}
+
+.game-status-badge {
+  display: flex;
+  align-items: center;
+}
+
+.badge-text {
+  background: rgba(0,0,0,0.3);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 0.9rem;
+  animation: pulse 2s infinite;
+}
+
+.badge-text.waiting { background: rgba(255, 193, 7, 0.9); }
+.badge-text.playing { background: rgba(40, 167, 69, 0.9); }
+.badge-text.finished { background: rgba(108, 117, 125, 0.9); }
+
+/* プレイヤーのターン */
+.your-turn-container {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+  position: relative;
+}
+
+.your-turn-card {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  margin: 3px;
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.turn-header {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  padding: 25px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.turn-icon {
+  font-size: 2.5rem;
+  animation: bounce 2s infinite;
+}
+
+.turn-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+  margin: 0;
+  letter-spacing: 2px;
+  flex: 1;
+  text-align: center;
+}
+
+.retire-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.retire-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+  color: white;
+}
+
+.turn-body {
+  padding: 30px;
+}
+
+.fighter-search-section {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.search-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.game-search-input {
+  width: 100%;
+  padding: 15px 20px;
+  border: 3px solid #e1e8ed;
+  border-radius: 15px;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.game-search-input:focus {
+  border-color: #667eea;
+  outline: none;
+  box-shadow: 0 0 20px rgba(102,126,234,0.3);
+  transform: scale(1.02);
+}
+
+.search-btn {
+  width: 100%;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(102,126,234,0.4);
+}
+
+/* 候補結果 */
+.candidate-result-section {
+  margin-top: 25px;
+}
+
+.candidate-card {
+  background: linear-gradient(135deg, #2ed573, #17c0eb);
+  border-radius: 15px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(46,213,115,0.3);
+}
+
+.candidate-header {
+  background: rgba(255,255,255,0.2);
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.candidate-icon {
+  font-size: 1.5rem;
+  animation: bounce 1s infinite;
+}
+
+.candidate-title {
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.candidate-body {
+  padding: 20px;
+  background: rgba(255,255,255,0.95);
+  color: #333;
+}
+
+.candidate-fighter-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.candidate-fighter-image {
+  width: 80px;
+  height: 100px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.candidate-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.candidate-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+}
+
+.candidate-placeholder .placeholder-icon {
+  font-size: 2rem;
+}
+
+.fighter-info {
+  flex: 1;
+  text-align: left;
+}
+
+.fighter-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.fighter-hiragana {
+  color: #666;
+  font-size: 1rem;
+}
+
+.select-fighter-btn {
+  width: 100%;
+  background: linear-gradient(45deg, #2ed573, #17c0eb);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.select-fighter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46,213,115,0.4);
+}
+
+/* 検索ステータス */
+.search-status {
+  margin-top: 20px;
+  padding: 15px 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.search-status.multiple-results {
+  background: rgba(255,193,7,0.1);
+  border: 2px solid rgba(255,193,7,0.3);
+}
+
+.search-status.no-results {
+  background: rgba(220,53,69,0.1);
+  border: 2px solid rgba(220,53,69,0.3);
+}
+
+.status-icon {
+  font-size: 1.5rem;
+}
+
+/* 待機中カード */
+.waiting-turn-container {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.waiting-turn-card {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(10px);
+  margin: 3px;
+  border-radius: 17px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.waiting-header {
+  margin-bottom: 20px;
+}
+
+.waiting-icon {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+}
+
+.waiting-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #666;
+  margin: 10px 0;
+}
+
+.current-player-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.waiting-text {
+  color: #888;
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+/* 使用済み選手 */
+.used-fighters-container {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.used-fighters-header {
+  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.header-icon {
+  font-size: 2rem;
+}
+
+.header-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  margin: 0;
+  flex: 1;
+}
+
+.fighters-count {
+  color: rgba(255,255,255,0.8);
+  font-size: 1.1rem;
+}
+
+.used-fighters-grid {
+  background: rgba(255,255,255,0.95);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.used-fighter-card {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  animation: slideInUp 0.5s ease forwards;
+}
+
+.used-fighter-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.fighter-image-section {
+  position: relative;
+  height: 120px;
+  overflow: hidden;
+}
+
+.used-fighter-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.used-fighter-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+}
+
+.used-fighter-placeholder .placeholder-icon {
+  font-size: 2rem;
+}
+
+.fighter-overlay {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.order-badge {
+  background: rgba(0,0,0,0.7);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.fighter-info-section {
+  padding: 10px;
+}
+
+.fighter-name-link .fighter-link {
+  color: #333;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.fighter-name-link .fighter-link:hover {
+  color: #667eea;
+}
+
+.used-by-info {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.used-by-label {
+  font-weight: 500;
+}
+
+.user-name {
+  color: #333;
+  font-weight: bold;
+}
+
+/* プレイヤーリスト */
+.players-container {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.players-header {
+  background: linear-gradient(45ff, #ff6b6b, #feca57);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.players-icon {
+  font-size: 1.8rem;
+}
+
+.players-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  margin: 0;
+  flex: 1;
+}
+
+.players-count {
+  color: rgba(255,255,255,0.8);
+  font-size: 1rem;
+}
+
+.players-list {
+  background: rgba(255,255,255,0.95);
+  padding: 15px;
+}
+
+.player-item {
+  background: white;
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  animation: slideInRight 0.5s ease forwards;
+}
+
+.player-item.current-player {
+  background: linear-gradient(45deg, #2ed573, #17c0eb);
+  color: white;
+  box-shadow: 0 5px 15px rgba(46,213,115,0.3);
+  transform: scale(1.02);
+}
+
+.player-item.eliminated {
+  opacity: 0.6;
+  background: #f8f9fa;
+}
+
+.player-order {
+  font-size: 1.2rem;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+}
+
+.player-details {
+  flex: 1;
+}
+
+.player-name {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+.status-badge.active {
+  background: rgba(255,255,255,0.3);
+  color: white;
+}
+
+.status-badge.waiting {
+  background: #e9ecef;
+  color: #666;
+}
+
+.status-badge.eliminated {
+  background: #dc3545;
+  color: white;
+}
+
+.eliminate-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.2s ease;
+}
+
+.eliminate-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+/* ゲーム操作 */
+.game-controls-container {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.controls-header {
+  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.controls-icon {
+  font-size: 1.8rem;
+}
+
+.controls-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  margin: 0;
+}
+
+.controls-body {
+  background: rgba(255,255,255,0.95);
+  padding: 20px;
+}
+
+.control-btn {
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  text-decoration: none;
+}
+
+.control-btn.start-btn {
+  background: linear-gradient(45deg, #2ed573, #17c0eb);
+  color: white;
+}
+
+.control-btn.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(46,213,115,0.4);
+  color: white;
+}
+
+.control-btn.settings-btn {
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  color: white;
+}
+
+.control-btn.settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+  color: white;
+}
+
+.control-btn.leave-btn {
+  background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.control-btn.leave-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+  color: white;
+}
+
+.control-btn.back-btn {
+  background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+  color: white;
+}
+
+.control-btn.back-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(149,165,166,0.4);
+  color: white;
+}
+
+.status-message {
+  text-align: center;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+.status-message.waiting {
+  background: rgba(255,193,7,0.1);
+  border: 2px solid rgba(255,193,7,0.3);
+  color: #856404;
+}
+
+.message-icon {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+/* 勝者表示 */
+.game-finished-container {
+  background: linear-gradient(135deg, #ffecd2, #fcb69f);
+  border-radius: 20px;
+  padding: 0;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.finished-card {
+  background: rgba(255,255,255,0.95);
+  margin: 3px;
+  border-radius: 17px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.winner-crown {
+  font-size: 4rem;
+  margin-bottom: 10px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.finished-title {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #333;
+  margin: 10px 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.winner-label {
+  background: linear-gradient(45deg, #ff6b6b, #feca57);
+  color: white;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.winner-name {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #ff6b6b;
+  margin-bottom: 20px;
+}
+
+.celebration-effects {
+  position: relative;
+}
+
+.sparkle {
+  display: inline-block;
+  font-size: 2rem;
+  margin: 0 10px;
+  animation: sparkle 2s infinite;
+}
+
+/* アニメーション */
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.2) rotate(180deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 1.8rem;
+  }
+  
+  .turn-title {
+    font-size: 1.5rem;
+  }
+  
+  .used-fighters-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+}
