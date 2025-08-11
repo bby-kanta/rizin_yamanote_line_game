@@ -50,10 +50,10 @@ class GeminiService
     sections = wiki_info[:sections] || {}
     
     <<~PROMPT
-      あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、以下のWikipedia情報のみを使用してクイズゲーム用の特徴を生成してください。
+      あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、以下の情報のみを使用してクイズゲーム用の特徴を生成してください。
 
-      === Wikipedia情報 ===
-      #{wiki_content[0..3000]}  # 最初の3000文字のみ使用
+      === 情報 ===
+      #{wiki_content[0..2500]}
       
       #{sections_summary(sections)}
       === 情報終了 ===
@@ -68,9 +68,9 @@ class GeminiService
             "feature": "過去いじめられていたことがキッカケで格闘家を志す"
           },
           {
-            "category": "戦績",
+            "category": "来歴",
             "level": 1,
-            "feature": "vsクレベル・コイケ 5分3R終了 判定2-1で勝利"
+            "feature": "15歳でプロデビューする"
           }
         ]
       }
@@ -81,6 +81,9 @@ class GeminiService
       - level2（普通）: 中程度の特徴
       - level3（抽象性が高い）: 誰にでも当てはまりそうな簡単な特徴
       - なるべくその人の人格を形成するような、その他に当てはまる固有のエピソードを沢山選出する
+      ‐ 戦績に当てはまる特徴は選出しない
+      ‐ lv3にあてはまる特徴は2個のみ選出する
+      - lv2にあてはまる特徴は2個のみ選出する
       - 適切なカテゴリがない場合は「その他」を使用
       - 提供された情報のみを使用し、存在しない情報は作成しない
 
