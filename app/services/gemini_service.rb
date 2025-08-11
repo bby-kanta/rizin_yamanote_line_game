@@ -24,7 +24,10 @@ class GeminiService
       Rails.logger.warn "Gemini API key not configured, returning test data"
     end
     
-    prompt = build_prompt
+    # Wikipediaからfighterのテキスト情報のみを取得（戦績は除く）
+    wiki_info = WikipediaService.fetch_fighter_content(@fighter.full_name)
+    
+    prompt = build_prompt(wiki_info)
     
     begin
       response = make_api_request(prompt)
@@ -37,12 +40,23 @@ class GeminiService
 
   private
 
-  def build_prompt
+  def build_prompt(wiki_info = nil)
+    if wiki_info.nil?
+      # Wikipedia情報が取得できない場合は一般的なプロンプト
+      return build_general_prompt
+    end
+    
+    wiki_content = wiki_info[:content] || "情報なし"
+    sections = wiki_info[:sections] || {}
+    
     <<~PROMPT
-      あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、
-      Wikipedia（https://ja.wikipedia.org/wiki/#{@fighter.full_name}）の情報のみを用いて、クイズゲーム用の特徴を生成してください。
-      Wikipediaの情報以外は絶対に使わないでください。
-      脚注の項目は絶対に含めないでください。
+      あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、以下のWikipedia情報のみを使用してクイズゲーム用の特徴を生成してください。
+
+      === Wikipedia情報 ===
+      #{wiki_content[0..3000]}  # 最初の3000文字のみ使用
+      
+      #{sections_summary(sections)}
+      === 情報終了 ===
 
       以下の形式で、JSON形式で20個程度の特徴を出力してください：
 
@@ -67,16 +81,59 @@ class GeminiService
       - level2（普通）: 中程度の特徴
       - level3（抽象性が高い）: 誰にでも当てはまりそうな簡単な特徴
       - 階級はlevel3、通称はlevel1、ファイトスタイルはlevel3、戦績はlevel1で設定
-      - 戦績は直近5試合程度の勝敗を含める（どの格闘家も大体戦績の項目があるのでそこから選定して）
-        - 5試合分は必ず含めること
+      - 戦績は直近5試合程度の勝敗を含める
       - ファイトスタイルは以下は必ず判定する
         - ストライカー・グラップラー・オールラウンダー・レスラー
-      - 通称は基本情報に大体含まれているので、そこから選定
       - 適切なカテゴリがない場合は「その他」を使用
+      - 提供された情報のみを使用し、存在しない情報は作成しない
+
+      JSONのみを出力し、説明文は不要です。
+    PROMPT
+  end
+
+  def build_general_prompt
+    # Wikipedia情報が取得できない場合の元のプロンプト
+    <<~PROMPT
+      あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、
+      公開されている情報を参考に、クイズゲーム用の特徴を生成してください。
+
+      以下の形式で、JSON形式で20個程度の特徴を出力してください：
+
+      {
+        "features": [
+          {
+            "category": "階級",
+            "level": 3,
+            "feature": "フェザー級"
+          }
+        ]
+      }
+
+      ルール：
+      - category: 階級、戦績、来歴、通称、所属、ファイトスタイル、その他 のいずれか
+      - level1（具体性が高い）: その人固有の詳細な特徴
+      - level2（普通）: 中程度の特徴
+      - level3（抽象性が高い）: 誰にでも当てはまりそうな簡単な特徴
       - 存在しない情報は作成しない
 
       JSONのみを出力し、説明文は不要です。
     PROMPT
+  end
+
+  def sections_summary(sections)
+    return "" if sections.empty?
+    
+    important_sections = %w[基本情報 戦績 獲得タイトル 来歴]
+    summary = ""
+    
+    important_sections.each do |section|
+      if sections[section] && !sections[section].empty?
+        summary += "\n=== #{section} ===\n"
+        summary += sections[section].take(5).join("\n") + "\n"
+      end
+    end
+
+    summary
   end
 
   def make_api_request(prompt)

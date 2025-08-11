@@ -147,22 +147,37 @@ class FightersController < ApplicationController
     end
   end
 
-  # AI特徴生成
+  # AI特徴生成（戦績も含む）
   def generate_ai_features
     respond_to do |format|
       format.json do
         begin
-          features_data = GeminiService.generate_fighter_features(@fighter)
+          # AIで基本特徴を生成
+          ai_features_data = GeminiService.generate_fighter_features(@fighter)
+
+          # Wikipediaから戦績データを直接取得
+          fight_records = WikipediaService.fetch_fighter_records(@fighter.full_name)
+
+          # 戦績データをFeature形式に変換（最新5試合）
+          record_features = convert_records_to_features(fight_records.first(5))
+          
+          # AI特徴と戦績特徴をマージ
+          all_features = ai_features_data + record_features
           
           # カテゴリIDを追加
-          enhanced_features = features_data.map do |feature|
+          enhanced_features = all_features.map do |feature|
             category = FighterFeatureCategory.find_by(name: feature['category'])
             feature.merge({
               'category_id' => category&.id
             })
           end
           
-          render json: { success: true, features: enhanced_features }
+          render json: { 
+            success: true, 
+            features: enhanced_features,
+            record_count: record_features.length,
+            ai_count: ai_features_data.length
+          }
         rescue GeminiService::APIError => e
           render json: { success: false, error: e.message }, status: :unprocessable_entity
         rescue => e
@@ -177,6 +192,55 @@ class FightersController < ApplicationController
   
   def set_fighter
     @fighter = Fighter.find(params[:id])
+  end
+  
+  def convert_records_to_features(fight_records)
+    features = []
+    
+    fight_records.each do |record|
+      next unless record[:opponent].present?
+      
+      # 基本的な戦績情報を特徴として追加
+      result_text = case record[:result]
+                   when '○' then '勝利'
+                   when '×' then '敗北'
+                   else record[:result]
+                   end
+      
+      # より読みやすいフォーマットに整理
+      feature_text = ""
+      
+      # 日付
+      feature_text += "#{record[:date]} " if record[:date].present?
+      
+      # 大会名
+      feature_text += "#{record[:event]}で " if record[:event].present?
+      
+      # 対戦相手と結果
+      if record[:opponent].present?
+        feature_text += "#{record[:opponent]}に#{result_text}"
+      end
+      
+      # 決着方法、ラウンド、時間
+      if record[:method].present? || record[:round].present? || record[:time].present?
+        method_parts = []
+        method_parts << record[:method] if record[:method].present?
+        method_parts << record[:round] if record[:round].present?
+        method_parts << record[:time] if record[:time].present?
+        
+        if method_parts.any?
+          feature_text += " (#{method_parts.join(' ')})"
+        end
+      end
+      
+      features << {
+        'category' => '戦績',
+        'level' => 1,  # 戦績は具体性が高いのでlevel 1
+        'feature' => feature_text
+      }
+    end
+    
+    features
   end
   
   def ensure_admin
