@@ -4,7 +4,7 @@ require 'json'
 
 class GeminiService
   API_KEY = Rails.application.credentials.dig(:gemini_api_key) || ENV['GEMINI_API_KEY']
-  BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent'
+  BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent'
 
   class APIError < StandardError; end
 
@@ -22,7 +22,6 @@ class GeminiService
     # API キーがない場合はテストデータを返す
     if API_KEY.blank?
       Rails.logger.warn "Gemini API key not configured, returning test data"
-      return generate_test_features
     end
     
     prompt = build_prompt
@@ -41,9 +40,11 @@ class GeminiService
   def build_prompt
     <<~PROMPT
       あなたは格闘技の専門家です。#{@fighter.full_name} 選手について、
-      Wikipediaなどの公開情報を参考に、クイズゲーム用の特徴を生成してください。
+      Wikipedia（https://ja.wikipedia.org/wiki/#{@fighter.full_name}）の情報のみを用いて、クイズゲーム用の特徴を生成してください。
+      Wikipediaの情報以外は絶対に使わないでください。
+      脚注の項目は絶対に含めないでください。
 
-      以下の形式で、JSON形式で30個程度の特徴を出力してください：
+      以下の形式で、JSON形式で20個程度の特徴を出力してください：
 
       {
         "features": [
@@ -66,13 +67,12 @@ class GeminiService
       - level2（普通）: 中程度の特徴
       - level3（抽象性が高い）: 誰にでも当てはまりそうな簡単な特徴
       - 階級はlevel3、通称はlevel1、ファイトスタイルはlevel3、戦績はlevel1で設定
-      - 戦績は直近5試合程度の勝敗を含める
+      - 戦績は直近5試合程度の勝敗を含める（どの格闘家も大体戦績の項目があるのでそこから選定して）
         - 5試合分は必ず含めること
       - ファイトスタイルは以下は必ず判定する
         - ストライカー・グラップラー・オールラウンダー・レスラー
+      - 通称は基本情報に大体含まれているので、そこから選定
       - 適切なカテゴリがない場合は「その他」を使用
-      - 1つの特徴は1文で表現
-      - 事実に基づいた情報のみ使用
       - 存在しない情報は作成しない
 
       JSONのみを出力し、説明文は不要です。
@@ -86,7 +86,8 @@ class GeminiService
     
     request = Net::HTTP::Post.new(uri)
     request['Content-Type'] = 'application/json'
-    request.body = {
+    
+    request_body = {
       contents: [{
         parts: [{
           text: prompt
@@ -96,17 +97,26 @@ class GeminiService
         temperature: 0.7,
         topK: 40,
         topP: 0.8,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4500, # 2.0の場合は2048に設定する。
       }
-    }.to_json
+    }
+    
+    Rails.logger.info "Sending request to Gemini API: #{request_body.to_json}"
+    request.body = request_body.to_json
 
     response = http.request(request)
     
+    Rails.logger.info "Gemini API response code: #{response.code}"
+    Rails.logger.info "Gemini API response body: #{response.body}"
+    
     unless response.code == '200'
+      Rails.logger.error "API request failed: #{response.code} - #{response.body}"
       raise APIError, "API request failed: #{response.code} - #{response.body}"
     end
 
-    JSON.parse(response.body)
+    parsed_response = JSON.parse(response.body)
+    Rails.logger.info "Parsed response: #{parsed_response}"
+    parsed_response
   end
 
   def parse_response(response)
@@ -156,125 +166,5 @@ class GeminiService
     if feature['feature'].blank?
       raise APIError, "Feature text cannot be blank"
     end
-  end
-
-  def generate_test_features
-    fighter_name = @fighter.full_name
-    
-    [
-      # 階級関連（レベル3：簡単）
-      {
-        "category" => "階級",
-        "level" => 3,
-        "feature" => "フェザー級"
-      },
-      {
-        "category" => "階級", 
-        "level" => 3,
-        "feature" => "プロ格闘家"
-      },
-      
-      # 戦績関連（レベル1：難しい）
-      {
-        "category" => "戦績",
-        "level" => 1,
-        "feature" => "vs田中太郎 5分3R終了 判定2-1で勝利"
-      },
-      {
-        "category" => "戦績",
-        "level" => 1,
-        "feature" => "vs佐藤次郎 2R TKO勝利"
-      },
-      {
-        "category" => "戦績",
-        "level" => 1,
-        "feature" => "通算戦績15勝3敗"
-      },
-      
-      # 来歴関連（レベル2：普通）
-      {
-        "category" => "来歴",
-        "level" => 2,
-        "feature" => "2018年にプロデビュー"
-      },
-      {
-        "category" => "来歴",
-        "level" => 2,
-        "feature" => "高校時代にレスリングで全国大会出場"
-      },
-      {
-        "category" => "来歴",
-        "level" => 2,
-        "feature" => "大学卒業後に格闘技転向"
-      },
-      
-      # 通称関連（レベル1：難しい）
-      {
-        "category" => "通称",
-        "level" => 1,
-        "feature" => "#{fighter_name}の愛称で親しまれる"
-      },
-      {
-        "category" => "通称",
-        "level" => 1,
-        "feature" => "ファンからは「○○」と呼ばれる"
-      },
-      
-      # 所属関連（レベル2：普通）
-      {
-        "category" => "所属",
-        "level" => 2,
-        "feature" => "パラエストラ東京所属"
-      },
-      {
-        "category" => "所属",
-        "level" => 2,
-        "feature" => "○○ジム所属"
-      },
-      
-      # ファイトスタイル関連（レベル3：簡単）
-      {
-        "category" => "ファイトスタイル",
-        "level" => 3,
-        "feature" => "ストライカー"
-      },
-      {
-        "category" => "ファイトスタイル",
-        "level" => 3,
-        "feature" => "打撃が得意"
-      },
-      {
-        "category" => "ファイトスタイル",
-        "level" => 3,
-        "feature" => "レスリングベース"
-      },
-      
-      # その他
-      {
-        "category" => "その他",
-        "level" => 2,
-        "feature" => "身長175cm"
-      },
-      {
-        "category" => "その他",
-        "level" => 2,
-        "feature" => "体重65kg"
-      },
-      {
-        "category" => "その他",
-        "level" => 3,
-        "feature" => "日本人"
-      },
-      {
-        "category" => "その他",
-        "level" => 1,
-        "feature" => "趣味は読書"
-      },
-      {
-        "category" => "その他",
-        "level" => 1,
-        "feature" => "好きな食べ物は寿司"
-      }
-    ]
   end
 end
