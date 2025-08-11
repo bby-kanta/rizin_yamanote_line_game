@@ -25,6 +25,12 @@ class QuizSessionsController < ApplicationController
   def new
     @quiz_session = QuizSession.new
     @eligible_fighters = Fighter.quiz_eligible.includes(:fighter_features)
+    @solo_mode = params[:solo] == 'true'
+    
+    # ソロプレイモードの場合は自動的にクイズを作成
+    if @solo_mode
+      create_solo_quiz
+    end
   end
 
   def create
@@ -63,7 +69,7 @@ class QuizSessionsController < ApplicationController
       return
     end
 
-    if @quiz_session.quiz_participants.count < 2
+    if !@quiz_session.solo_mode? && @quiz_session.quiz_participants.count < 2
       redirect_to @quiz_session, alert: '参加者が2人以上必要です。'
       return
     end
@@ -188,6 +194,30 @@ class QuizSessionsController < ApplicationController
   end
 
   private
+
+  def create_solo_quiz
+    eligible_fighters = Fighter.quiz_eligible
+    if eligible_fighters.empty?
+      flash[:alert] = 'クイズ対象の選手がいません。まず選手の特徴を登録してください。'
+      redirect_to fighters_path
+      return
+    end
+
+    @quiz_session = current_user.created_quiz_sessions.build
+    @quiz_session.target_fighter = eligible_fighters.sample
+    @quiz_session.solo_mode = true
+    
+    if @quiz_session.save
+      # 作成者を最初の参加者として自動登録
+      @quiz_session.participant_for(current_user)
+      # ソロプレイなので即座に開始
+      @quiz_session.start!
+      redirect_to @quiz_session, notice: 'ソロクイズを開始しました！'
+    else
+      flash[:alert] = 'クイズを作成できませんでした。'
+      redirect_to quiz_sessions_path
+    end
+  end
 
   def set_quiz_session
     @quiz_session = QuizSession.find(params[:id])

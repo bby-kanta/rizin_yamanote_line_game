@@ -8,6 +8,7 @@ class QuizSession < ApplicationRecord
 
   validates :status, presence: true, inclusion: { in: %w[waiting started ended] }
   validates :current_hint_index, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :solo_mode, inclusion: { in: [true, false] }
 
   scope :active, -> { where(status: ['waiting', 'started']) }
   scope :ended, -> { where(status: 'ended') }
@@ -24,6 +25,10 @@ class QuizSession < ApplicationRecord
 
   def ended?
     status == 'ended'
+  end
+
+  def solo_mode?
+    solo_mode
   end
 
   def start!
@@ -143,6 +148,7 @@ class QuizSession < ApplicationRecord
   end
 
   def all_participants_connected?
+    return true if solo_mode? # ソロモードの場合は常にtrueを返す
     quiz_participants.count > 0 && quiz_participants.connected.count == quiz_participants.count
   end
 
