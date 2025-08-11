@@ -17,14 +17,59 @@
         <div class="alert alert-info">
           <h5 class="alert-heading">⏳ ゲーム開始を待っています</h5>
           <p>作成者: <%= @quiz_session.creator.name %></p>
+          
+          <!-- 接続状況表示 -->
+          <div id="connection-status" class="mb-3">
+            <div class="connection-info">
+              <span class="connection-label">接続状況:</span>
+              <span id="connected-count"><%= @quiz_session.quiz_participants.connected.count %></span>
+              /
+              <span id="total-count"><%= @quiz_session.quiz_participants.count %></span>
+              人が接続済み
+            </div>
+            <div class="progress mt-2" style="height: 8px;">
+              <div id="connection-progress" class="progress-bar bg-success" role="progressbar" 
+                   style="width: <%= @quiz_session.quiz_participants.count > 0 ? (@quiz_session.quiz_participants.connected.count.to_f / @quiz_session.quiz_participants.count * 100) : 0 %>%"></div>
+            </div>
+            
+            <!-- リロードボタン -->
+            <div class="reload-button-container mt-3 text-center">
+              <button id="reload-btn" class="btn btn-outline-primary btn-sm" onclick="location.reload()">
+                <span class="btn-icon">🔄</span>
+                <span class="btn-text">接続状況を更新</span>
+              </button>
+            </div>
+          </div>
+          
           <% if @quiz_session.creator == current_user && @quiz_session.participants.count >= 2 %>
-            <%= button_to "ゲームを開始", start_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-success btn-lg" %>
+            <div id="start-button-container">
+              <% if @quiz_session.all_participants_connected? %>
+                <button id="start-game-btn" class="btn btn-success btn-lg" onclick="startGame()">
+                  <span class="btn-icon">🚀</span>
+                  <span class="btn-text">ゲームを開始</span>
+                </button>
+              <% else %>
+                <button id="start-game-btn" class="btn btn-secondary btn-lg" disabled>
+                  <span class="btn-icon">⏳</span>
+                  <span class="btn-text">全員の接続を待機中...</span>
+                </button>
+              <% end %>
+            </div>
           <% elsif @quiz_session.creator == current_user %>
             <p class="text-muted">他の参加者を待っています...（最低2人必要）</p>
           <% elsif @can_join %>
             <%= button_to "参加する", join_quiz_session_path(@quiz_session), method: :patch, class: "btn btn-primary btn-lg" %>
           <% elsif @participant %>
-            <p>参加済み - ゲーム開始を待っています</p>
+            <div class="participant-waiting">
+              <p>参加済み - ゲーム開始を待っています</p>
+              <div id="participant-connection-status" class="mt-2">
+                <% if @participant.connected? %>
+                  <span class="badge bg-success">✓ 接続済み</span>
+                <% else %>
+                  <span class="badge bg-warning">⏳ 接続中...</span>
+                <% end %>
+              </div>
+            </div>
           <% end %>
         </div>
 
@@ -1263,6 +1308,88 @@
               opacity: 1;
             }
           }
+
+          /* 接続状況表示のスタイル */
+          #connection-status {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+          }
+
+          .connection-info {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+          }
+
+          .connection-label {
+            color: #666;
+          }
+
+          #connected-count {
+            color: #28a745;
+            font-weight: bold;
+          }
+
+          .participant-waiting {
+            text-align: center;
+          }
+
+          #participant-connection-status .badge {
+            font-size: 0.9rem;
+            padding: 8px 12px;
+          }
+
+          #start-button-container {
+            text-align: center;
+            margin-top: 20px;
+          }
+
+          #start-game-btn {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+          }
+
+          #start-game-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+          }
+
+          #start-game-btn:disabled {
+            opacity: 0.7;
+          }
+
+          /* リロードボタンのスタイル */
+          .reload-button-container {
+            border-top: 1px solid rgba(255,255,255,0.3);
+            padding-top: 15px;
+          }
+
+          #reload-btn {
+            transition: all 0.3s ease;
+            border: 2px solid #007bff;
+            background: transparent;
+          }
+
+          #reload-btn:hover {
+            background: #007bff;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+          }
+
+          #reload-btn .btn-icon {
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s ease;
+          }
+
+          #reload-btn:hover .btn-icon {
+            transform: rotate(180deg);
+          }
         </style>
 
 <script>
@@ -1550,6 +1677,10 @@ function setupQuizSubscription() {
           clearAllButtonLoading();
           window.location.reload();
           break;
+        case 'connection_updated':
+          // 接続状況が更新された時
+          updateConnectionStatus(data);
+          break;
       }
     }
   });
@@ -1578,6 +1709,98 @@ function updateParticipantStatus(userId, status) {
       }
     }
   });
+}
+
+function updateConnectionStatus(data) {
+  // 接続カウントを更新
+  const connectedCountElement = document.getElementById('connected-count');
+  const totalCountElement = document.getElementById('total-count');
+  const progressElement = document.getElementById('connection-progress');
+  const startButton = document.getElementById('start-game-btn');
+  
+  if (connectedCountElement) {
+    connectedCountElement.textContent = data.connected_count;
+  }
+  
+  if (totalCountElement) {
+    totalCountElement.textContent = data.total_count;
+  }
+  
+  if (progressElement && data.total_count > 0) {
+    const percentage = (data.connected_count / data.total_count) * 100;
+    progressElement.style.width = percentage + '%';
+  }
+  
+  // スタートボタンの状態を更新
+  if (startButton) {
+    if (data.all_connected && data.total_count >= 2) {
+      startButton.disabled = false;
+      startButton.className = 'btn btn-success btn-lg';
+      startButton.querySelector('.btn-icon').textContent = '🚀';
+      startButton.querySelector('.btn-text').textContent = 'ゲームを開始';
+      startButton.onclick = startGame;
+    } else {
+      startButton.disabled = true;
+      startButton.className = 'btn btn-secondary btn-lg';
+      startButton.querySelector('.btn-icon').textContent = '⏳';
+      startButton.querySelector('.btn-text').textContent = '全員の接続を待機中...';
+      startButton.onclick = null;
+    }
+  }
+  
+  // 参加者の接続状況バッジを更新
+  const participantConnectionStatus = document.getElementById('participant-connection-status');
+  if (participantConnectionStatus) {
+    // 現在のユーザーが接続済みかどうかは、WebSocketが動作している場合は接続済みと判断
+    const badge = participantConnectionStatus.querySelector('.badge');
+    if (badge) {
+      badge.className = 'badge bg-success';
+      badge.textContent = '✓ 接続済み';
+    }
+  }
+}
+
+function startGame() {
+  const startButton = document.getElementById('start-game-btn');
+  if (startButton) {
+    setButtonLoading(startButton, '開始中...');
+    
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch('<%= start_quiz_session_path(@quiz_session) %>', {
+      method: 'PATCH',
+      headers: {
+        'X-CSRF-Token': token,
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    }).then(response => {
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error('Request failed');
+      }
+    }).then(data => {
+      console.log('Start game response:', data);
+      if (data.status === 'success') {
+        // 成功の場合はWebSocketでセッション開始の通知が来るのでそこでリロード
+        showMessage(data.message);
+      } else if (data.status === 'waiting') {
+        // まだ全員接続していない場合
+        removeButtonLoading(startButton);
+        showMessage(data.message);
+      } else {
+        // エラーの場合
+        removeButtonLoading(startButton);
+        showMessage(data.message || 'エラーが発生しました。');
+      }
+    }).catch(error => {
+      console.error('Start game error:', error);
+      removeButtonLoading(startButton);
+      alert('ゲーム開始でエラーが発生しました。');
+    });
+  }
 }
 
 // DOMContentLoadedまたは即座に実行

@@ -11,6 +11,7 @@ class QuizParticipant < ApplicationRecord
   scope :not_responded, -> { where(responded_at: nil) }
   scope :winners, -> { where(is_winner: true) }
   scope :by_points, -> { order(points: :desc, answered_at: :asc) }
+  scope :connected, -> { where.not(connected_at: nil) }
 
   def answered?
     answered_at.present?
@@ -29,5 +30,28 @@ class QuizParticipant < ApplicationRecord
                    .where.not(answered_at: nil)
                    .where('points > ? OR (points = ? AND answered_at < ?)', points, points, answered_at || Time.current)
                    .count + 1
+  end
+
+  def connected?
+    connected_at.present?
+  end
+
+  def mark_connected!
+    Rails.logger.info "QuizParticipant: Marking user #{user_id} as connected for session #{quiz_session_id}"
+    current_time = Time.current
+    self.connected_at = current_time
+    result = save!
+    reload  # DBから最新の状態を取得
+    Rails.logger.info "QuizParticipant: Connected at updated to #{connected_at}"
+    result
+  end
+
+  def mark_disconnected!
+    Rails.logger.info "QuizParticipant: Marking user #{user_id} as disconnected for session #{quiz_session_id}"
+    self.connected_at = nil
+    result = save!
+    reload  # DBから最新の状態を取得
+    Rails.logger.info "QuizParticipant: Connected at updated to #{connected_at}"
+    result
   end
 end

@@ -68,15 +68,31 @@ class QuizSessionsController < ApplicationController
       return
     end
 
+    # 全員の接続確認
+    unless @quiz_session.all_participants_connected?
+      respond_to do |format|
+        format.html { redirect_to @quiz_session, alert: 'すべての参加者の接続を待っています。しばらくお待ちください。' }
+        format.json { render json: { status: 'waiting', message: 'すべての参加者の接続を待っています。' } }
+      end
+      return
+    end
+
     if @quiz_session.start!
       # リアルタイム更新をここで送信
       ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
         type: 'session_started',
-        hint: render_to_string(partial: 'current_hint', locals: { hint: @quiz_session.current_hint })
+        hint: render_to_string(partial: 'current_hint', locals: { hint: @quiz_session.current_hint }, formats: [:html])
       })
-      redirect_to @quiz_session, notice: 'クイズが開始されました！'
+      
+      respond_to do |format|
+        format.html { redirect_to @quiz_session, notice: 'クイズが開始されました！' }
+        format.json { render json: { status: 'success', message: 'クイズが開始されました！' } }
+      end
     else
-      redirect_to @quiz_session, alert: 'クイズを開始できませんでした。'
+      respond_to do |format|
+        format.html { redirect_to @quiz_session, alert: 'クイズを開始できませんでした。' }
+        format.json { render json: { status: 'error', message: 'クイズを開始できませんでした。' } }
+      end
     end
   end
 

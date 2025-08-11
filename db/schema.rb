@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_10_060730) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_11_035050) do
   create_table "fighter_feature_categories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.datetime "created_at", null: false
@@ -111,6 +111,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_10_060730) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "responded_at"
+    t.datetime "connected_at"
     t.index ["quiz_session_id", "user_id"], name: "index_quiz_participants_on_quiz_session_id_and_user_id", unique: true
     t.index ["quiz_session_id"], name: "index_quiz_participants_on_quiz_session_id"
     t.index ["user_id"], name: "index_quiz_participants_on_user_id"

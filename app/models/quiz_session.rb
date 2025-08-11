@@ -80,7 +80,9 @@ class QuizSession < ApplicationRecord
   end
 
   def participant_for(user)
-    quiz_participants.find_or_create_by(user: user)
+    participant = quiz_participants.find_or_create_by(user: user)
+    Rails.logger.info "QuizSession: participant_for user #{user.id} - found/created participant #{participant.id}, connected_at: #{participant.connected_at}"
+    participant
   end
 
   def submit_answer(user, fighter)
@@ -138,6 +140,10 @@ class QuizSession < ApplicationRecord
 
   def remaining_participants
     quiz_participants.where(answered_at: nil)
+  end
+
+  def all_participants_connected?
+    quiz_participants.count > 0 && quiz_participants.connected.count == quiz_participants.count
   end
 
   def calculate_points_for_participant(participant)
