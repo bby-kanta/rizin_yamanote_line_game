@@ -3,7 +3,7 @@ class QuizSessionsController < ApplicationController
   before_action :set_quiz_session, only: [:show, :join, :start, :submit_answer, :pass]
 
   def index
-    @quiz_sessions = QuizSession.active.includes(:creator, :target_fighter, :participants).order(created_at: :desc)
+    @quiz_sessions = QuizSession.active.where(solo_mode: false).includes(:creator, :target_fighter, :participants).order(created_at: :desc)
     @my_sessions = current_user.created_quiz_sessions.includes(:target_fighter, :participants).order(created_at: :desc)
   end
 
