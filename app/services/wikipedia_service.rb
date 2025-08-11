@@ -16,6 +16,10 @@ class WikipediaService
     new(fighter_name).fetch_records_only
   end
   
+  def self.fetch_fighter_basic_info(fighter_name)
+    new(fighter_name).fetch_basic_info_only
+  end
+  
   def self.fetch_fighter_info(fighter_name)
     new(fighter_name).fetch_info
   end
@@ -50,6 +54,19 @@ class WikipediaService
     parse_fight_records(html_content)
   rescue => e
     Rails.logger.error "Wikipedia records fetch error for #{@fighter_name}: #{e.message}"
+    []
+  end
+  
+  def fetch_basic_info_only
+    # 基本情報（infobox）のみを取得
+    page_title = search_page || @fighter_name
+    html_content = fetch_html_content(page_title)
+    
+    return [] unless html_content
+    
+    parse_basic_info(html_content)
+  rescue => e
+    Rails.logger.error "Wikipedia basic info fetch error for #{@fighter_name}: #{e.message}"
     []
   end
 
@@ -241,6 +258,87 @@ class WikipediaService
     
     # 日付順に並び替え（新しい順）
     records.sort_by { |r| r[:date] }.reverse
+  end
+  
+  def parse_basic_info(html)
+    return [] unless html
+    
+    require 'nokogiri'
+    doc = Nokogiri::HTML(html)
+    
+    basic_info_features = []
+    
+    # infoboxテーブルを探す
+    infobox = doc.css('table.infobox').first
+    return [] unless infobox
+    
+    # テーブルの各行を解析
+    infobox.css('tr').each do |row|
+      th = row.css('th').first
+      td = row.css('td').first
+      
+      next unless th && td
+      
+      field_name = th.text.strip
+      field_value = td.text.strip.gsub(/\s+/, ' ')
+      
+      next if field_value.empty?
+      
+      # 項目に応じてカテゴリとレベルを決定
+      feature_info = categorize_basic_info(field_name, field_value)
+      
+      if feature_info
+        basic_info_features << {
+          category: feature_info[:category],
+          level: feature_info[:level],
+          feature: feature_info[:feature]
+        }
+      end
+    end
+    
+    Rails.logger.info "Parsed #{basic_info_features.length} basic info features"
+    basic_info_features
+  rescue => e
+    Rails.logger.error "Failed to parse basic info: #{e.message}"
+    []
+  end
+  
+  def categorize_basic_info(field_name, field_value)
+    case field_name
+    when /通称/
+      { category: '通称', level: 1, feature: field_value }
+    when /階級/
+      { category: '階級', level: 3, feature: field_value }
+    when /所属/
+      { category: '所属', level: 2, feature: "#{field_value}所属" }
+    when /国籍/
+      { category: '来歴', level: 2, feature: "#{field_value}国籍" }
+    when /出身地/
+      { category: '来歴', level: 1, feature: "#{field_value}出身" }
+    when /居住/
+      { category: '来歴', level: 2, feature: "#{field_value}在住" }
+    when /身長/
+      { category: 'その他', level: 1, feature: "身長#{field_value}" }
+    when /体重/
+      { category: 'その他', level: 1, feature: "体重#{field_value}" }
+    when /リーチ/
+      { category: 'その他', level: 1, feature: "リーチ#{field_value}" }
+    when /バックボーン/
+      { category: 'ファイトスタイル', level: 2, feature: "#{field_value}がバックボーン" }
+    when /テーマ曲/
+      { category: 'その他', level: 1, feature: "入場テーマ曲は#{field_value}" }
+    when /生年月日/
+      # 年齢情報を抽出（例：1986年4月4日（39歳））
+      if field_value.match(/（(\d+)歳）/)
+        age = $1
+        { category: 'その他', level: 1, feature: "#{age}歳" }
+      else
+        nil
+      end
+    else
+      # 認識できない項目は「その他」カテゴリにする
+      { category: 'その他', level: 2, feature: "#{field_name}は#{field_value}" }
+    end
   end
 
   def clean_text_content(text)

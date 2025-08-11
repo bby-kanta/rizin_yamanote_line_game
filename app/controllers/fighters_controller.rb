@@ -164,8 +164,12 @@ class FightersController < ApplicationController
           # 戦績データをFeature形式に変換（最新5試合）
           record_features = convert_records_to_features(fight_records.first(5))
           
-          # フィルタ済みAI特徴と戦績特徴をマージ
-          all_features = filtered_ai_features + record_features
+          # Wikipediaから基本情報を直接取得
+          basic_info_data = WikipediaService.fetch_fighter_basic_info(@fighter.full_name)
+          basic_info_features = convert_basic_info_to_features(basic_info_data)
+          
+          # フィルタ済みAI特徴、戦績特徴、基本情報特徴をマージ
+          all_features = filtered_ai_features + record_features + basic_info_features
           
           # カテゴリIDを追加
           enhanced_features = all_features.map do |feature|
@@ -179,9 +183,11 @@ class FightersController < ApplicationController
             success: true, 
             features: enhanced_features,
             record_count: record_features.length,
+            basic_info_count: basic_info_features.length,
             ai_count: filtered_ai_features.length,
             ai_original_count: ai_features_data.length,
-            ai_filtered_count: ai_features_data.length - filtered_ai_features.length
+            ai_filtered_count: ai_features_data.length - filtered_ai_features.length,
+            total_count: all_features.length
           }
         rescue GeminiService::APIError => e
           render json: { success: false, error: e.message }, status: :unprocessable_entity
@@ -246,6 +252,17 @@ class FightersController < ApplicationController
     end
     
     features
+  end
+  
+  def convert_basic_info_to_features(basic_info_data)
+    # WikipediaServiceから取得した基本情報データをFeature形式に変換
+    basic_info_data.map do |info|
+      {
+        'category' => info[:category],
+        'level' => info[:level],
+        'feature' => info[:feature]
+      }
+    end
   end
   
   def ensure_admin
