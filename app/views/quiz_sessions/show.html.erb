@@ -32,12 +32,17 @@
                    style="width: <%= @quiz_session.quiz_participants.count > 0 ? (@quiz_session.quiz_participants.connected.count.to_f / @quiz_session.quiz_participants.count * 100) : 0 %>%"></div>
             </div>
             
-            <!-- リロードボタン -->
+            <!-- リロードボタンと自動更新表示 -->
             <div class="reload-button-container mt-3 text-center">
               <button id="reload-btn" class="btn btn-outline-primary btn-sm" onclick="location.reload()">
                 <span class="btn-icon">🔄</span>
                 <span class="btn-text">接続状況を更新</span>
               </button>
+              <div id="auto-reload-info" class="auto-reload-info mt-2">
+                <small class="text-muted">
+                  自動更新まであと <span id="countdown">10</span> 秒
+                </small>
+              </div>
             </div>
           </div>
           
@@ -1390,6 +1395,15 @@
           #reload-btn:hover .btn-icon {
             transform: rotate(180deg);
           }
+
+          .auto-reload-info {
+            opacity: 0.8;
+          }
+
+          #countdown {
+            font-weight: bold;
+            color: #007bff;
+          }
         </style>
 
 <script>
@@ -1803,15 +1817,56 @@ function startGame() {
   }
 }
 
+// 待機画面での自動リロード機能
+function setupAutoReload() {
+  // 待機画面かどうかを確認
+  const isWaitingState = <%= @quiz_session.waiting? ? 'true' : 'false' %>;
+  if (!isWaitingState) return;
+  
+  let countdown = 10;
+  const countdownElement = document.getElementById('countdown');
+  const autoReloadInfo = document.getElementById('auto-reload-info');
+  
+  if (!countdownElement || !autoReloadInfo) return;
+  
+  const countdownTimer = setInterval(function() {
+    countdown--;
+    countdownElement.textContent = countdown;
+    
+    if (countdown <= 0) {
+      clearInterval(countdownTimer);
+      location.reload();
+    }
+  }, 1000);
+  
+  // 手動リロードボタンが押された場合はタイマーをクリア
+  const reloadBtn = document.getElementById('reload-btn');
+  if (reloadBtn) {
+    reloadBtn.addEventListener('click', function() {
+      clearInterval(countdownTimer);
+    });
+  }
+  
+  // ゲーム開始ボタンが押された場合もタイマーをクリア
+  const startBtn = document.getElementById('start-game-btn');
+  if (startBtn) {
+    startBtn.addEventListener('click', function() {
+      clearInterval(countdownTimer);
+    });
+  }
+}
+
 // DOMContentLoadedまたは即座に実行
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', function() {
     initializeQuizAutocomplete();
     setupQuizSubscription();
+    setupAutoReload();
   });
 } else {
   // DOMは既に読み込まれている
   initializeQuizAutocomplete();
   setupQuizSubscription();
+  setupAutoReload();
 }
 </script>
