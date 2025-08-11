@@ -4,7 +4,7 @@ require 'json'
 
 class GeminiService
   API_KEY = Rails.application.credentials.dig(:gemini_api_key) || ENV['GEMINI_API_KEY']
-  BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent'
+  BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent'
 
   class APIError < StandardError; end
 

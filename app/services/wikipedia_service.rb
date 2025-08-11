@@ -280,19 +280,30 @@ class WikipediaService
       next unless th && td
       
       field_name = th.text.strip
-      field_value = td.text.strip.gsub(/\s+/, ' ')
+      
+      # 通称フィールドの場合はHTMLをそのまま使用（brタグを保持）
+      if field_name.include?('通称')
+        field_value = td.inner_html.strip
+      else
+        field_value = td.text.strip.gsub(/\s+/, ' ')
+      end
       
       next if field_value.empty?
       
       # 項目に応じてカテゴリとレベルを決定
-      feature_info = categorize_basic_info(field_name, field_value)
+      feature_infos = categorize_basic_info(field_name, field_value)
       
-      if feature_info
-        basic_info_features << {
-          category: feature_info[:category],
-          level: feature_info[:level],
-          feature: feature_info[:feature]
-        }
+      # 通称などの複数値対応のため配列として処理
+      feature_infos = [feature_infos] unless feature_infos.is_a?(Array)
+      
+      feature_infos.each do |feature_info|
+        if feature_info
+          basic_info_features << {
+            category: feature_info[:category],
+            level: feature_info[:level],
+            feature: feature_info[:feature]
+          }
+        end
       end
     end
     
@@ -306,7 +317,25 @@ class WikipediaService
   def categorize_basic_info(field_name, field_value)
     case field_name
     when /通称/
-      { category: '通称', level: 1, feature: field_value }
+      # 通称はbrタグや改行で分割して複数の特徴として処理
+      # HTMLタグを除去してからテキストのみ抽出
+      clean_value = field_value.gsub(/<[^>]+>/, ' ')
+                              .gsub(/\r?\n+/, '\n')  # 複数改行を1つに
+                              .strip
+      
+      # brタグの位置で分割（HTMLの場合）またはテキストの改行で分割
+      nicknames = if field_value.include?('<br')
+                    field_value.split(/<br\s*\/?>/).map { |n| n.gsub(/<[^>]+>/, '').strip }.reject(&:empty?)
+                  else
+                    clean_value.split(/\r?\n/).map(&:strip).reject(&:empty?)
+                  end
+      
+      # 分割できない場合は全体を1つの通称として扱う
+      nicknames = [clean_value] if nicknames.empty? && !clean_value.empty?
+
+      nicknames.map do |nickname|
+        { category: '通称', level: 1, feature: nickname }
+      end
     when /階級/
       { category: '階級', level: 3, feature: field_value }
     when /所属/
