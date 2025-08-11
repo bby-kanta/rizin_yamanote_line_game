@@ -154,6 +154,9 @@ class FightersController < ApplicationController
         begin
           # AIで基本特徴を生成
           ai_features_data = GeminiService.generate_fighter_features(@fighter)
+          
+          # AIが生成した戦績カテゴリの特徴を除去
+          filtered_ai_features = ai_features_data.reject { |feature| feature['category'] == '戦績' }
 
           # Wikipediaから戦績データを直接取得
           fight_records = WikipediaService.fetch_fighter_records(@fighter.full_name)
@@ -161,8 +164,8 @@ class FightersController < ApplicationController
           # 戦績データをFeature形式に変換（最新5試合）
           record_features = convert_records_to_features(fight_records.first(5))
           
-          # AI特徴と戦績特徴をマージ
-          all_features = ai_features_data + record_features
+          # フィルタ済みAI特徴と戦績特徴をマージ
+          all_features = filtered_ai_features + record_features
           
           # カテゴリIDを追加
           enhanced_features = all_features.map do |feature|
@@ -176,7 +179,9 @@ class FightersController < ApplicationController
             success: true, 
             features: enhanced_features,
             record_count: record_features.length,
-            ai_count: ai_features_data.length
+            ai_count: filtered_ai_features.length,
+            ai_original_count: ai_features_data.length,
+            ai_filtered_count: ai_features_data.length - filtered_ai_features.length
           }
         rescue GeminiService::APIError => e
           render json: { success: false, error: e.message }, status: :unprocessable_entity
