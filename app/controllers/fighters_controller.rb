@@ -171,9 +171,13 @@ class FightersController < ApplicationController
           # フィルタ済みAI特徴、戦績特徴、基本情報特徴をマージ
           all_features = filtered_ai_features + record_features + basic_info_features
           
+          # 全カテゴリを1回のクエリで取得（N+1問題を回避）
+          category_names = all_features.map { |f| f['category'] }.uniq
+          categories_by_name = FighterFeatureCategory.where(name: category_names).index_by(&:name)
+          
           # カテゴリIDを追加
           enhanced_features = all_features.map do |feature|
-            category = FighterFeatureCategory.find_by(name: feature['category'])
+            category = categories_by_name[feature['category']]
             feature.merge({
               'category_id' => category&.id
             })
