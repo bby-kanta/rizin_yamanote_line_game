@@ -2,6 +2,7 @@ class QuizAnswer < ApplicationRecord
   belongs_to :quiz_session
   belongs_to :user
   belongs_to :fighter, optional: true
+  belongs_to :fighter_feature
 
   validates :is_correct, inclusion: { in: [true, false] }
   validates :submitted_at, presence: true

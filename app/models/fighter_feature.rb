@@ -7,7 +7,6 @@ class FighterFeature < ApplicationRecord
 
   scope :by_level, ->(level) { where(level: level) }
   scope :by_category, ->(category_id) { where(fighter_feature_category_id: category_id) }
-  scope :ordered_for_quiz, -> { order(level: :desc, created_at: :asc) }  # レベル3→2→1の順
 
   def level_text
     case level

@@ -5,6 +5,7 @@ class QuizSession < ApplicationRecord
   has_many :quiz_participants, dependent: :destroy
   has_many :participants, through: :quiz_participants, source: :user
   has_many :quiz_answers, dependent: :destroy
+  has_many :quiz_hints, dependent: :destroy
 
   validates :status, presence: true, inclusion: { in: %w[waiting started ended] }
   validates :current_hint_index, presence: true, numericality: { greater_than_or_equal_to: 0 }
@@ -14,6 +15,8 @@ class QuizSession < ApplicationRecord
   scope :ended, -> { where(status: 'ended') }
   scope :waiting, -> { where(status: 'waiting') }
   scope :started, -> { where(status: 'started') }
+  
+  after_create :initialize_quiz_hints
 
   def waiting?
     status == 'waiting'
@@ -53,22 +56,25 @@ class QuizSession < ApplicationRecord
   end
 
   def current_hint
-    hints[current_hint_index] if current_hint_index < hints.size
+    # current_hint_indexに対応するヒントを取得
+    quiz_hints.ordered.offset(current_hint_index).first&.fighter_feature
   end
 
   def hints
-    @hints ||= target_fighter.quiz_features.ordered_for_quiz.to_a
+    # 互換性のためにquiz_hintsのfighter_featuresを返す
+    @hints ||= quiz_hints.ordered.includes(:fighter_feature).map(&:fighter_feature)
   end
 
   def next_hint!
-    return false if current_hint_index >= hints.size - 1
+    return false unless has_more_hints?
     
     increment!(:current_hint_index)
     current_hint
   end
 
   def has_more_hints?
-    current_hint_index < hints.size - 1
+    # まだ表示していないヒントがあるかチェック
+    current_hint_index < quiz_hints.count - 1
   end
 
   def all_participants_responded_to_current_hint?
@@ -107,7 +113,8 @@ class QuizSession < ApplicationRecord
         fighter: fighter,
         is_correct: is_correct,
         submitted_at: Time.current,
-        hint_index: current_hint_index
+        hint_index: current_hint_index,
+        fighter_feature: current_hint
       )
       
       if is_correct
@@ -137,7 +144,8 @@ class QuizSession < ApplicationRecord
       fighter: nil, # パスの場合はnil
       is_correct: false,
       submitted_at: Time.current,
-      hint_index: current_hint_index
+      hint_index: current_hint_index,
+      fighter_feature: current_hint
     )
     
     :passed
@@ -215,5 +223,18 @@ class QuizSession < ApplicationRecord
       points: 0,
       is_winner: false
     )
+  end
+  
+  private
+  
+  def initialize_quiz_hints
+    # クイズセッション作成時にランダムな順番でヒントを初期化
+    features = target_fighter.quiz_features.to_a.shuffle
+    features.each_with_index do |feature, index|
+      quiz_hints.create!(
+        fighter_feature: feature,
+        display_order: index
+      )
+    end
   end
 end

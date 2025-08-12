@@ -28,7 +28,7 @@ class Fighter < ApplicationRecord
 
   # クイズ用のメソッド
   def quiz_features
-    fighter_features.ordered_for_quiz
+    fighter_features
   end
 
   def has_quiz_features?
