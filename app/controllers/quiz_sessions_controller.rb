@@ -205,10 +205,9 @@ class QuizSessionsController < ApplicationController
       return
     end
 
-    # 既に再戦セッションが作成されているかチェック（同じ選手、同じ作成者で最近作成されたもの）
+    # 既に再戦セッションが作成されているかチェック（同じ作成者で最近作成されたもの）
     rematch_session = QuizSession.where(
       creator: @quiz_session.creator,
-      target_fighter: @quiz_session.target_fighter,
       status: ['waiting', 'started']
     ).where('created_at > ?', @quiz_session.ended_at || @quiz_session.updated_at).first
 
@@ -242,9 +241,15 @@ class QuizSessionsController < ApplicationController
         redirect_to rematch_session, notice: '再戦セッションに参加しました！他の参加者を待っています。'
       end
     else
-      # 新しい再戦セッションを作成（元の作成者が作成者になる）
+      # 新しい再戦セッションを作成（元の作成者が作成者になる、ランダムな選手を選択）
+      eligible_fighters = Fighter.quiz_eligible
+      if eligible_fighters.empty?
+        redirect_to @quiz_session, alert: 'クイズ対象の選手がいません。'
+        return
+      end
+
       @new_quiz_session = @quiz_session.creator.created_quiz_sessions.build(
-        target_fighter: @quiz_session.target_fighter
+        target_fighter: eligible_fighters.sample  # ランダムに選択
       )
 
       if @new_quiz_session.save
