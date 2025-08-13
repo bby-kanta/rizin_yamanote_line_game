@@ -333,6 +333,20 @@
                   </div>
                 <% end %>
               </div>
+              
+              <!-- 再戦ボタン -->
+              <div class="rematch-section">
+                <div class="rematch-buttons">
+                  <%= button_to "もう一度対戦", rematch_quiz_session_path(@quiz_session), 
+                                method: :post, 
+                                class: "btn-rematch btn-rematch-same",
+                                data: { turbo: false } %>
+                  <%= link_to "新しいクイズを作成", new_quiz_session_path, 
+                              class: "btn-rematch btn-rematch-new" %>
+                  <%= link_to "クイズ一覧に戻る", quiz_sessions_path, 
+                              class: "btn-rematch btn-rematch-list" %>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1215,6 +1229,76 @@
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+
+          /* 再戦ボタンのスタイル */
+          .rematch-section {
+            margin-top: 30px;
+            padding: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+          }
+
+          .rematch-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+
+          .btn-rematch {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+          }
+
+          .btn-rematch::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+          }
+
+          .btn-rematch:hover::before {
+            transform: translateX(0);
+          }
+
+          .btn-rematch:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+          }
+
+          .btn-rematch-same {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            color: white;
+          }
+
+          .btn-rematch-new {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+          }
+
+          .btn-rematch-list {
+            background: linear-gradient(45deg, #17c0eb, #2ed573);
+            color: white;
           }
 
           .thinking-spinner {

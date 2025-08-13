@@ -1,6 +1,6 @@
 class QuizSessionsController < ApplicationController
   before_action :authenticate_user!
-  before_action :set_quiz_session, only: [:show, :join, :start, :submit_answer, :pass]
+  before_action :set_quiz_session, only: [:show, :join, :start, :submit_answer, :pass, :rematch]
 
   def index
     @quiz_sessions = QuizSession.active.where(solo_mode: false).includes(:creator, :target_fighter, :participants).order(created_at: :desc)
@@ -87,7 +87,7 @@ class QuizSessionsController < ApplicationController
       # リアルタイム更新をここで送信
       ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
         type: 'session_started',
-        hint: render_to_string(partial: 'current_hint', locals: { hint: @quiz_session.current_hint }, formats: [:html])
+        hint: render_to_string(partial: 'quiz_sessions/current_hint', locals: { hint: @quiz_session.current_hint }, formats: [:html])
       })
       
       respond_to do |format|
@@ -193,6 +193,72 @@ class QuizSessionsController < ApplicationController
     end
   end
 
+  def rematch
+    unless @quiz_session.ended?
+      redirect_to @quiz_session, alert: 'ゲーム終了後に再戦が可能です。'
+      return
+    end
+
+    # 元の参加者でない場合は参加不可
+    unless current_user.joined_quiz?(@quiz_session)
+      redirect_to @quiz_session, alert: '再戦に参加する権限がありません。'
+      return
+    end
+
+    # 既に再戦セッションが作成されているかチェック（同じ選手、同じ作成者で最近作成されたもの）
+    rematch_session = QuizSession.where(
+      creator: @quiz_session.creator,
+      target_fighter: @quiz_session.target_fighter,
+      status: ['waiting', 'started']
+    ).where('created_at > ?', @quiz_session.ended_at || @quiz_session.updated_at).first
+
+    if rematch_session
+      # 既存の再戦セッションがある場合は参加
+      unless current_user.joined_quiz?(rematch_session)
+        participant = rematch_session.participant_for(current_user)
+        # 接続状態にする
+        participant.update(connected_at: Time.current)
+      end
+      
+      # 全員が参加済みかチェック
+      original_participants_count = @quiz_session.quiz_participants.count
+      current_participants_count = rematch_session.quiz_participants.count
+      
+      if current_participants_count >= original_participants_count && 
+         rematch_session.waiting? && 
+         rematch_session.all_participants_connected?
+        
+        # 全員が参加したので自動的にゲーム開始
+        rematch_session.start!
+        
+        # WebSocketで開始通知
+        ActionCable.server.broadcast("quiz_session_#{rematch_session.id}", {
+          type: 'session_started',
+          hint: render_to_string(partial: 'quiz_sessions/current_hint', locals: { hint: rematch_session.current_hint }, formats: [:html])
+        })
+        
+        redirect_to rematch_session, notice: '全員が参加したため再戦が開始されました！'
+      else
+        redirect_to rematch_session, notice: '再戦セッションに参加しました！他の参加者を待っています。'
+      end
+    else
+      # 新しい再戦セッションを作成（元の作成者が作成者になる）
+      @new_quiz_session = @quiz_session.creator.created_quiz_sessions.build(
+        target_fighter: @quiz_session.target_fighter
+      )
+
+      if @new_quiz_session.save
+        # 現在のユーザーのみを参加させ、接続状態にする
+        participant = @new_quiz_session.participant_for(current_user)
+        participant.update(connected_at: Time.current)
+        
+        redirect_to @new_quiz_session, notice: '再戦セッションを作成しました！他の参加者の参加を待っています。'
+      else
+        redirect_to @quiz_session, alert: '再戦用のセッションを作成できませんでした。'
+      end
+    end
+  end
+
   private
 
   def create_solo_quiz
@@ -230,7 +296,7 @@ class QuizSessionsController < ApplicationController
   def broadcast_next_hint
     ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
       type: 'next_hint',
-      hint: render_to_string(partial: 'current_hint', locals: { hint: @quiz_session.current_hint }, formats: [:html]),
+      hint: render_to_string(partial: 'quiz_sessions/current_hint', locals: { hint: @quiz_session.current_hint }, formats: [:html]),
       hint_index: @quiz_session.current_hint_index
     })
   end
@@ -239,7 +305,7 @@ class QuizSessionsController < ApplicationController
     ActionCable.server.broadcast("quiz_session_#{@quiz_session.id}", {
       type: 'game_ended',
       winner: @quiz_session.winner_user&.name,
-      results: render_to_string(partial: 'results', locals: { quiz_session: @quiz_session }, formats: [:html])
+      results: render_to_string(partial: 'quiz_sessions/results', locals: { quiz_session: @quiz_session }, formats: [:html])
     })
   end
 

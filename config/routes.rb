@@ -5,6 +5,7 @@ Rails.application.routes.draw do
       patch :start
       post :submit_answer
       patch :pass
+      post :rematch
     end
   end
   # Mount Action Cable server
